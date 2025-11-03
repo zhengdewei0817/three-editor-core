@@ -587,6 +587,16 @@ Editor.prototype = {
 
 	},
 
+
+	clearObjects: function () {
+		this.signals.sceneGraphChanged.active = false;
+		while ( this.scene.children.length > 0 ) {
+			this.removeObject( this.scene.children[ 0 ] );
+		}
+		this.signals.sceneGraphChanged.active = true;
+		this.signals.sceneGraphChanged.dispatch();
+	},
+	
 	clear: function () {
 
 		this.history.clear();
@@ -746,11 +756,27 @@ Editor.prototype = {
 
 	},
 
-    init: function () {
+    init: function (options) {
+		const width = options.width || window.innerWidth;
+		const height = options.height || window.innerHeight;
+		console.log(width, height, options);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setSize(width, height);
         this.signals.rendererCreated.dispatch(renderer);
-    }
+    },
+	destroy: function () {
+		this.signals.rendererCreated.removeAll();
+		this.signals.rendererUpdated.removeAll();
+		this.signals.rendererDetectKTX2Support.removeAll();
+		this.signals.sceneGraphChanged.removeAll();
+		this.signals.cameraChanged.removeAll();
+		this.signals.objectSelected.removeAll();
+		this.signals.objectFocused.removeAll();
+	},
+
+	updataRender: function (elements) {
+		
+	},
 
 };
 

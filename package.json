@@ -1,6 +1,6 @@
 {
   "name": "@zhengdewei/three-editor-core",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Three.js Editor Core Package",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
@@ -61,12 +61,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yourusername/three-editor-core.git"
+    "url": "git+https://github.com/zhengdewei0817/three-editor-core.git"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/three-editor-core/issues"
+    "url": "https://github.com/zhengdewei0817/three-editor-core/issues"
   },
-  "homepage": "https://github.com/yourusername/three-editor-core#readme",
+  "homepage": "https://github.com/zhengdewei0817/three-editor-core",
   "dependencies": {
     "three": "^0.179.1",
     "three-gpu-pathtracer": "^0.0.23",
