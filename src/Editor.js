@@ -9,7 +9,7 @@ import { Selector } from './Selector.js';
 import { Signal } from './libs/signals.min.js';
 import { diffString, diff } from 'json-diff';
 import { splitPath } from './utils/fs.js';
-import { createMesh, setProps as setMeshProps } from './components/Mesh.js';
+import { createMesh, setProps as setMeshProps, updataUI as updataMeshUI } from './components/Mesh.js';
 
 var _DEFAULT_CAMERA = new THREE.PerspectiveCamera(50, 1, 0.01, 1000);
 _DEFAULT_CAMERA.name = 'Camera';
@@ -96,6 +96,8 @@ function Editor() {
 
 		pathTracerUpdated: new Signal(),
 
+		updataSchema: new Signal(),
+
 	};
 	this.data = {};
 	this.oloData = {};
@@ -136,10 +138,29 @@ function Editor() {
 
 	this.addCamera(this.camera);
 
+	this.addEvent();
+
 }
 
 Editor.prototype = {
-
+	addEvent: function () {
+		this.signals.objectChanged.add((object) => {
+			console.log(object);
+			const type = object.type;
+			switch (type) {
+				case 'Mesh':
+					const res = updataMeshUI(object);
+					this.signals.updataSchema.dispatch({
+						uuid: object.uuid,
+						props: res,
+					});
+					break;
+			
+				default:
+					break;
+			}
+		});
+	},
 	setScene: function (scene) {
 
 		this.scene.uuid = scene.uuid;
@@ -831,9 +852,13 @@ Editor.prototype = {
 					// 👉 这里可以根据你的业务逻辑进一步处理
 					this._updateByField?.(rootName, key, value.__new, value.__old, rootData);
 				}
-
+				else if (value && Array.isArray(value)) {
+					console.log('array', value); // 这个暂时不处理
+					// this.diffData(value, [], false, rootName, rootData); 
+				}
 				// 如果是对象但不是__old/__new结构，可以继续递归进入子层
 				else if (value && typeof value === 'object') {
+					console.log('object', value);
 					this.diffData(value, {}, false, rootName, rootData); // 可选：递归查找更深层的__old/__new
 				}
 			}

@@ -80,7 +80,8 @@ export function setProps(object: THREE.Mesh, key: string, value: any, editor) {
     if (/rotationZ/.test(key)) {
       rotationZ = value;
     }
-    const newRotation = new THREE.Euler(rotationX, rotationY, rotationZ);
+    const newRotation = new THREE.Euler( rotationX * THREE.MathUtils.DEG2RAD, rotationY * THREE.MathUtils.DEG2RAD, rotationZ * THREE.MathUtils.DEG2RAD );
+
     console.log(newRotation);
     if ( new THREE.Vector3().setFromEuler( object.rotation ).distanceTo( new THREE.Vector3().setFromEuler( newRotation ) ) >= 0.01 ) {
         editor.execute( new SetRotationCommand( editor, object, newRotation ) );
@@ -119,4 +120,21 @@ export function setProps(object: THREE.Mesh, key: string, value: any, editor) {
     }
     return;
   }
+}
+
+export function updataUI(object): MeshConfig.config.props {
+    const res = {
+        positionX: object.position.x,
+        positionY: object.position.y,
+        positionZ: object.position.z,
+        rotationX: object.rotation.x * THREE.MathUtils.RAD2DEG,
+        rotationY: object.rotation.y * THREE.MathUtils.RAD2DEG,
+        rotationZ: object.rotation.z * THREE.MathUtils.RAD2DEG,
+        scaleX: object.scale.x,
+        scaleY: object.scale.y,
+        scaleZ: object.scale.z,
+        color: `#${object.material.color.getHexString()}`,
+    };
+    return res;
+
 }
