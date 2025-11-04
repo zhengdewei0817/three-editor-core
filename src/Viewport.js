@@ -276,7 +276,7 @@ function Viewport( editor ) {
 
 	const controls = new EditorControls( camera );
 	controls.addEventListener( 'change', function () {
-
+		console.log('change');
 		signals.cameraChanged.dispatch( camera );
 		signals.refreshSidebarObject3D.dispatch( camera );
 

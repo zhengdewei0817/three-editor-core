@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { SetPositionCommand } from "../commands/SetPositionCommand.js";
 import { SetRotationCommand } from "../commands/SetRotationCommand.js";
 import { SetScaleCommand } from "../commands/SetScaleCommand.js";
-
+import { SetMaterialColorCommand } from "../commands/SetMaterialColorCommand.js";
 interface MeshConfig {
   name: string;
   id: string;
@@ -108,5 +108,15 @@ export function setProps(object: THREE.Mesh, key: string, value: any, editor) {
         editor.execute( new SetScaleCommand( editor, object, newScale ) );
 
     }
+  }
+  if (/color/.test(key)) {
+    console.log(object);
+    const newColor = new THREE.Color(value);
+    if ( object.material.color !== undefined && object.material.color.getHex() !== newColor.getHex() ) {
+        console.log(newColor);
+        editor.execute( new SetMaterialColorCommand( editor, object, 'color', newColor.getHex() ) );
+
+    }
+    return;
   }
 }
