@@ -1,0 +1,112 @@
+import * as THREE from "three";
+import { SetPositionCommand } from "../commands/SetPositionCommand.js";
+import { SetRotationCommand } from "../commands/SetRotationCommand.js";
+import { SetScaleCommand } from "../commands/SetScaleCommand.js";
+
+interface MeshConfig {
+  name: string;
+  id: string;
+  type: string;
+  config: {
+    props: {
+      positionX?: number;
+      positionY?: number;
+      positionZ?: number;
+      rotationX?: number;
+      rotationY?: number;
+      rotationZ?: number;
+      scaleX?: number;
+      scaleY?: number;
+      scaleZ?: number;
+      showrHide?: boolean;
+      width?: number;
+      height?: number;
+      depth?: number;
+      color?: string;
+    };
+  };
+}
+
+export function createMesh(name: string, options: MeshConfig) {
+  const props = options.config.props || {};
+  const width = props.width || 1;
+  const height = props.height || 1;
+  const depth = props.depth || 1;
+  const color = props.color || 0xffffff;
+  const cubeGeometry = new THREE.BoxGeometry(width, height, depth);
+  const cubeMaterial = new THREE.MeshBasicMaterial({
+    color: new THREE.Color(color),
+  });
+  const object = new THREE.Mesh(cubeGeometry, cubeMaterial);
+  object.userData.elementId = name;
+  object.uuid = name;
+  return object;
+}
+
+export function setProps(object: THREE.Mesh, key: string, value: any, editor) {
+  console.log(key, value);
+  if (/position/.test(key)) {
+    console.log(object);
+    let positionX = object.position.x;
+    let positionY = object.position.y;
+    let positionZ = object.position.z;
+    if (/positionX/.test(key)) {
+      positionX = value;
+    }
+    if (/positionY/.test(key)) {
+      positionY = value;
+    }
+    if (/positionZ/.test(key)) {
+      positionZ = value;
+    }
+    const newPosition = new THREE.Vector3(positionX, positionY, positionZ);
+    if (object.position.distanceTo(newPosition) >= 0.01) {
+      console.log(newPosition);
+      editor.execute(new SetPositionCommand(editor, object, newPosition));
+    }
+    return;
+  }
+  if (/rotation/.test(key)) {
+    console.log(object);
+    let rotationX = object.rotation.x;
+    let rotationY = object.rotation.y;
+    let rotationZ = object.rotation.z;
+    if (/rotationX/.test(key)) {
+      rotationX = value;
+    }
+    if (/rotationY/.test(key)) {
+      rotationY = value;
+    }
+    if (/rotationZ/.test(key)) {
+      rotationZ = value;
+    }
+    const newRotation = new THREE.Euler(rotationX, rotationY, rotationZ);
+    console.log(newRotation);
+    if ( new THREE.Vector3().setFromEuler( object.rotation ).distanceTo( new THREE.Vector3().setFromEuler( newRotation ) ) >= 0.01 ) {
+        editor.execute( new SetRotationCommand( editor, object, newRotation ) );
+
+    }
+    return;
+  }
+  if (/scale/.test(key)) {
+    console.log(object);
+    let scaleX = object.scale.x;
+    let scaleY = object.scale.y;
+    let scaleZ = object.scale.z;
+    if (/scaleX/.test(key)) {
+      scaleX = value;
+    }
+    if (/scaleY/.test(key)) {
+      scaleY = value;
+    }
+    if (/scaleZ/.test(key)) {
+      scaleZ = value;
+    }
+    const newScale = new THREE.Vector3( scaleX, scaleY, scaleZ );
+    if ( object.scale.distanceTo( newScale ) >= 0.01 ) {
+
+        editor.execute( new SetScaleCommand( editor, object, newScale ) );
+
+    }
+  }
+}
