@@ -10,6 +10,7 @@ import { Signal } from './libs/signals.min.js';
 import { diffString, diff } from 'json-diff';
 import { splitPath } from './utils/fs.js';
 import { createMesh, setProps as setMeshProps, updataUI as updataMeshUI } from './components/Mesh.js';
+import { SidebarSettingsShortcuts } from './Shortcuts';
 
 var _DEFAULT_CAMERA = new THREE.PerspectiveCamera(50, 1, 0.01, 1000);
 _DEFAULT_CAMERA.name = 'Camera';
@@ -139,7 +140,7 @@ function Editor() {
 	this.addCamera(this.camera);
 
 	this.addEvent();
-
+	new SidebarSettingsShortcuts(this);
 }
 
 Editor.prototype = {
