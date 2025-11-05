@@ -14,6 +14,7 @@ import { SidebarSettingsShortcuts } from './Shortcuts';
 import { createPointLight, setProps as setPointLightProps, updataUI as updataPointLightUI } from './components/PointLight.js';
 import { createAmbientLight, setProps as setAmbientLightProps, updataUI as updataAmbientLightUI } from './components/AmbientLight.js';
 import { createDirectionalLight, setProps as setDirectionalLightProps, updataUI as updataDirectionalLightUI } from './components/DirectionalLight.js';
+import { createModel } from './components/Model.js';
 
 var _DEFAULT_CAMERA = new THREE.PerspectiveCamera(50, 1, 0.01, 1000);
 _DEFAULT_CAMERA.name = 'Camera';
@@ -930,6 +931,9 @@ Editor.prototype = {
 				break;
 			case "DirectionalLight":
 				createDirectionalLight(name, value, this);
+				break;
+			case "Model":
+				createModel(name, value, this);
 				break;
 			default:
 				break;

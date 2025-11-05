@@ -799,6 +799,56 @@ function Loader( editor ) {
 
 	};
 
+	this.loadByUrls = async function (urls, options) {
+		const manager = new THREE.LoadingManager();
+		manager.setURLModifier( function ( url ) {
+			return url;
+		} );
+		const res = []
+		for (const url of urls) {
+			const result = await this.loadByUrl(url, manager, options);
+			if (options.getModel) {
+				res.push(result);
+			}
+		}
+		return res;
+	}
+
+	this.loadByUrl = async function (fileUrl, manager, options, onProgress, onError) {
+		const cleanUrl = fileUrl.split('?')[0].split('#')[0];
+		// 提取文件名（去掉路径）
+		const filename = cleanUrl.substring(cleanUrl.lastIndexOf('/') + 1);
+		// 提取扩展名
+		const extension = filename.split('.').pop().toLowerCase();
+
+		switch (extension) {
+			case 'glb':
+				{
+					const loader = await createGLTFLoader();
+					return new Promise((resolve, reject) => {
+						loader.load(fileUrl, function (result) {
+							const scene = result.scene;
+							scene.name = filename;
+							scene.animations.push( ...result.animations );
+							
+							if (!options.getModel) {
+								editor.execute( new AddObjectCommand( editor, scene ) );
+							}
+							loader.dracoLoader.dispose();
+							loader.ktx2Loader.dispose();
+							resolve(scene);
+						}, (e) => {
+							onProgress && onProgress(e)
+						}, (err) => {
+							reject(err);
+						});
+					})
+				}
+			default:
+				break;
+		}
+	}
+
 	function handleJSON( data ) {
 
 		if ( data.metadata === undefined ) { // 2.0
