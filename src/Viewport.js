@@ -194,6 +194,7 @@ function Viewport( editor ) {
 		if ( onDownPosition.distanceTo( onUpPosition ) === 0 ) {
 
 			const intersects = selector.getPointerIntersects( onUpPosition, camera );
+			console.log('intersects', intersects)
 			signals.intersectionsDetected.dispatch( intersects );
 
 			render();

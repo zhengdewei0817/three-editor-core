@@ -34,7 +34,7 @@ export function createMesh(name: string, options: MeshConfig) {
   const depth = props.depth || 1;
   const color = props.color || 0xffffff;
   const cubeGeometry = new THREE.BoxGeometry(width, height, depth);
-  const cubeMaterial = new THREE.MeshBasicMaterial({
+  const cubeMaterial = new THREE.MeshStandardMaterial({
     color: new THREE.Color(color),
   });
   const object = new THREE.Mesh(cubeGeometry, cubeMaterial);
@@ -111,18 +111,18 @@ export function setProps(object: THREE.Mesh, key: string, value: any, editor) {
     }
   }
   if (/color/.test(key)) {
+    console.log('objectobjectobjectobjectobjectobject')
     console.log(object);
     const newColor = new THREE.Color(value);
     if ( object.material.color !== undefined && object.material.color.getHex() !== newColor.getHex() ) {
         console.log(newColor);
         editor.execute( new SetMaterialColorCommand( editor, object, 'color', newColor.getHex() ) );
-
     }
     return;
   }
 }
 
-export function updataUI(object): MeshConfig.config.props {
+export function updataUI(object) {
     const res = {
         positionX: object.position.x,
         positionY: object.position.y,

@@ -11,6 +11,9 @@ import { diffString, diff } from 'json-diff';
 import { splitPath } from './utils/fs.js';
 import { createMesh, setProps as setMeshProps, updataUI as updataMeshUI } from './components/Mesh.js';
 import { SidebarSettingsShortcuts } from './Shortcuts';
+import { createPointLight, setProps as setPointLightProps, updataUI as updataPointLightUI } from './components/PointLight.js';
+import { createAmbientLight, setProps as setAmbientLightProps, updataUI as updataAmbientLightUI } from './components/AmbientLight.js';
+import { createDirectionalLight, setProps as setDirectionalLightProps, updataUI as updataDirectionalLightUI } from './components/DirectionalLight.js';
 
 var _DEFAULT_CAMERA = new THREE.PerspectiveCamera(50, 1, 0.01, 1000);
 _DEFAULT_CAMERA.name = 'Camera';
@@ -148,15 +151,36 @@ Editor.prototype = {
 		this.signals.objectChanged.add((object) => {
 			console.log(object);
 			const type = object.type;
+			let res;
 			switch (type) {
 				case 'Mesh':
-					const res = updataMeshUI(object);
+					res = updataMeshUI(object);
 					this.signals.updataSchema.dispatch({
 						uuid: object.uuid,
 						props: res,
 					});
 					break;
-			
+				case 'PointLight':
+					res = updataPointLightUI(object);
+					this.signals.updataSchema.dispatch({
+						uuid: object.uuid,
+						props: res,
+					});
+					break;
+				case 'AmbientLight':
+					res = updataAmbientLightUI(object);
+					this.signals.updataSchema.dispatch({
+						uuid: object.uuid,
+						props: res,
+					});
+					break;
+				case 'DirectionalLight':
+					res = updataDirectionalLightUI(object);
+					this.signals.updataSchema.dispatch({
+						uuid: object.uuid,
+						props: res,
+					});
+					break;
 				default:
 					break;
 			}
@@ -874,6 +898,15 @@ Editor.prototype = {
 		switch (type) {
 			case "Mesh":
 				setMeshProps(object, key, newVal, this);
+				break;	
+			case "PointLight":
+				setPointLightProps(object, key, newVal, this);
+				break;
+			case "AmbientLight":
+				setAmbientLightProps(object, key, newVal, this);
+				break;
+			case "DirectionalLight":
+				setDirectionalLightProps(object, key, newVal, this);
 				break;
 			default:
 				break;
@@ -885,11 +918,19 @@ Editor.prototype = {
 		let object = null;
 		switch (type) {
 			case "Mesh":
-				object = createMesh(name, value);
+				object = createMesh(name, value, this);
 				console.log(object);
 				this.addObject(object);
 				break;
-
+			case "PointLight":
+				createPointLight(name, value, this);
+				break;
+			case "AmbientLight":
+				createAmbientLight(name, value, this);
+				break;
+			case "DirectionalLight":
+				createDirectionalLight(name, value, this);
+				break;
 			default:
 				break;
 		}
