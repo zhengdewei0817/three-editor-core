@@ -247,7 +247,7 @@ class GLTFLoader extends Loader {
 	 * @param {onProgressCallback} onProgress - Executed while the loading is in progress.
 	 * @param {onErrorCallback} onError - Executed when errors occur.
 	 */
-	load( url, onLoad, onProgress, onError ) {
+	load( url, onLoad, onProgress, onError, extraOptions = {} ) {
 
 		const scope = this;
 
@@ -305,14 +305,14 @@ class GLTFLoader extends Loader {
 		loader.load( url, function ( data ) {
 
 			try {
-
+				console.log('extraOptions',extraOptions);
 				scope.parse( data, resourcePath, function ( gltf ) {
 
 					onLoad( gltf );
 
 					scope.manager.itemEnd( url );
 
-				}, _onError );
+				}, _onError, extraOptions );
 
 			} catch ( e ) {
 
@@ -412,7 +412,7 @@ class GLTFLoader extends Loader {
 	 * @param {function(GLTFLoader~LoadObject)} onLoad - Executed when the loading process has been finished.
 	 * @param {onErrorCallback} onError - Executed when errors occur.
 	 */
-	parse( data, path, onLoad, onError ) {
+	parse( data, path, onLoad, onError, extraOptions = {} ) {
 
 		let json;
 		const extensions = {};
@@ -460,9 +460,8 @@ class GLTFLoader extends Loader {
 			return;
 
 		}
-
-		const parser = new GLTFParser( json, {
-
+		json.extraOptions = extraOptions;
+		const parser = new GLTFParser( json , {
 			path: path || this.resourcePath || '',
 			crossOrigin: this.crossOrigin,
 			requestHeader: this.requestHeader,
@@ -2381,6 +2380,10 @@ function addUnknownExtensionsToUserData( knownExtensions, object, objectDef ) {
  */
 function assignExtrasToUserData( object, gltfDef ) {
 
+	if (gltfDef?.extraOptions) {
+		Object.assign( object.userData, gltfDef.extraOptions );
+	}
+	
 	if ( gltfDef.extras !== undefined ) {
 
 		if ( typeof gltfDef.extras === 'object' ) {
@@ -4418,7 +4421,11 @@ class GLTFParser {
 				node.name = nodeName;
 
 			}
-
+			if (node.isMesh) {
+				node.castShadow = true;   // ✅ 模型产生阴影
+				node.receiveShadow = true; // ✅ 模型接收阴影（比如内部部分）
+			}
+			node.userData.isModel = true;
 			assignExtrasToUserData( node, nodeDef );
 
 			if ( nodeDef.extensions ) addUnknownExtensionsToUserData( extensions, node, nodeDef );

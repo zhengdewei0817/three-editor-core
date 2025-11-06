@@ -23,6 +23,10 @@ export async function createModel(
   console.log(url);
   const model = await editor.loader.loadByUrls([url], {
     getModel: true,
+  }, () => {}, (e) => {
+    console.log(e);
+  }, {
+    disabledSelect: true,
   });
   console.log(model);
   model.forEach((item) => {

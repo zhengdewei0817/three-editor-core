@@ -31,6 +31,8 @@ export function createDirectionalLight(name: string, options: DirectionalLightCo
   directionalLight.position.set(positionX, positionY, positionZ);   
   directionalLight.name = name;
   directionalLight.uuid = name;
+  directionalLight.castShadow = true; // 必须开启！
+
   editor.execute(new AddObjectCommand(editor, directionalLight));
 }
 

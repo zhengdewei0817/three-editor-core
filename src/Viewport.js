@@ -406,7 +406,7 @@ function Viewport( editor ) {
 
 	} );
 
-	signals.objectSelected.add( function ( object ) {
+	signals.objectSelected.add( function ( object, canTransform = true ) {
 
 		selectionBox.visible = false;
 		transformControls.detach();
@@ -420,8 +420,9 @@ function Viewport( editor ) {
 				selectionBox.visible = true;
 
 			}
-
-			transformControls.attach( object );
+			if (canTransform) {
+				transformControls.attach( object );
+			}
 
 		}
 

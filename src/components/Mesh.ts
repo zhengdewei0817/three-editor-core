@@ -3,6 +3,7 @@ import { SetPositionCommand } from "../commands/SetPositionCommand.js";
 import { SetRotationCommand } from "../commands/SetRotationCommand.js";
 import { SetScaleCommand } from "../commands/SetScaleCommand.js";
 import { SetMaterialColorCommand } from "../commands/SetMaterialColorCommand.js";
+import { SetMaterialValueCommand } from "../commands/SetMaterialValueCommand.js";
 interface MeshConfig {
   name: string;
   id: string;
@@ -23,6 +24,8 @@ interface MeshConfig {
       height?: number;
       depth?: number;
       color?: string;
+      transparent?: boolean;
+      opacity?: number;
     };
   };
 }
@@ -120,6 +123,18 @@ export function setProps(object: THREE.Mesh, key: string, value: any, editor) {
     }
     return;
   }
+  if (/transparent/.test(key)) {
+    console.log(object);
+    object.material.transparent = value;
+    editor.execute( new SetMaterialValueCommand( editor, object, 'transparent', value ) );
+    return;
+  }
+  if (/opacity/.test(key)) {
+    console.log(object);
+    object.material.opacity = value;
+    editor.execute( new SetMaterialValueCommand( editor, object, 'opacity', value ) );
+    return;
+  }
 }
 
 export function updataUI(object) {
@@ -134,6 +149,8 @@ export function updataUI(object) {
         scaleY: object.scale.y,
         scaleZ: object.scale.z,
         color: `#${object.material.color.getHexString()}`,
+        transparent: object.material.transparent,
+        opacity: object.material.opacity,
     };
     return res;
 

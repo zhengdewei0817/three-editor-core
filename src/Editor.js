@@ -211,7 +211,7 @@ Editor.prototype = {
 		}
 
 		this.signals.sceneGraphChanged.active = true;
-		this.signals.sceneGraphChanged.dispatch();
+		this.signals.sceneGraphChanged.dispatch(this.scene);
 
 	},
 
@@ -243,14 +243,14 @@ Editor.prototype = {
 		}
 
 		this.signals.objectAdded.dispatch(object);
-		this.signals.sceneGraphChanged.dispatch();
+		this.signals.sceneGraphChanged.dispatch(this.scene);
 
 	},
 
 	nameObject: function (object, name) {
 
 		object.name = name;
-		this.signals.sceneGraphChanged.dispatch();
+		this.signals.sceneGraphChanged.dispatch(this.scene);
 
 	},
 
@@ -272,7 +272,7 @@ Editor.prototype = {
 		object.parent.remove(object);
 
 		this.signals.objectRemoved.dispatch(object);
-		this.signals.sceneGraphChanged.dispatch();
+		this.signals.sceneGraphChanged.dispatch(this.scene);
 
 	},
 
@@ -285,7 +285,7 @@ Editor.prototype = {
 	setGeometryName: function (geometry, name) {
 
 		geometry.name = name;
-		this.signals.sceneGraphChanged.dispatch();
+		this.signals.sceneGraphChanged.dispatch(this.scene);
 
 	},
 
@@ -392,7 +392,7 @@ Editor.prototype = {
 	setMaterialName: function (material, name) {
 
 		material.name = name;
-		this.signals.sceneGraphChanged.dispatch();
+		this.signals.sceneGraphChanged.dispatch(this.scene);
 
 	},
 
@@ -646,7 +646,7 @@ Editor.prototype = {
 			this.removeObject(this.scene.children[0]);
 		}
 		this.signals.sceneGraphChanged.active = true;
-		this.signals.sceneGraphChanged.dispatch();
+		this.signals.sceneGraphChanged.dispatch(this.scene);
 	},
 
 	clear: function () {
@@ -814,6 +814,8 @@ Editor.prototype = {
 		console.log(width, height, options);
 		const renderer = new THREE.WebGLRenderer({ antialias: true });
 		renderer.setSize(width, height);
+		renderer.shadowMap.enabled = true;
+ 		renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 		this.signals.rendererCreated.dispatch(renderer);
 	},
 	destroy: function () {

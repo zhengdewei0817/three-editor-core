@@ -799,14 +799,15 @@ function Loader( editor ) {
 
 	};
 
-	this.loadByUrls = async function (urls, options) {
+	this.loadByUrls = async function (urls, options, onProgress, onError, extraOptions) {
+		extraOptions = extraOptions || {};
 		const manager = new THREE.LoadingManager();
 		manager.setURLModifier( function ( url ) {
 			return url;
 		} );
 		const res = []
 		for (const url of urls) {
-			const result = await this.loadByUrl(url, manager, options);
+			const result = await this.loadByUrl(url, manager, options, onProgress, onError, extraOptions);
 			if (options.getModel) {
 				res.push(result);
 			}
@@ -814,7 +815,7 @@ function Loader( editor ) {
 		return res;
 	}
 
-	this.loadByUrl = async function (fileUrl, manager, options, onProgress, onError) {
+	this.loadByUrl = async function (fileUrl, manager, options, onProgress, onError, extraOptions) {
 		const cleanUrl = fileUrl.split('?')[0].split('#')[0];
 		// 提取文件名（去掉路径）
 		const filename = cleanUrl.substring(cleanUrl.lastIndexOf('/') + 1);
@@ -841,7 +842,7 @@ function Loader( editor ) {
 							onProgress && onProgress(e)
 						}, (err) => {
 							reject(err);
-						});
+						}, extraOptions);
 					})
 				}
 			default:

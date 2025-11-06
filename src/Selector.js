@@ -75,7 +75,8 @@ class Selector {
 	select( object ) {
 
 		if ( this.editor.selected === object ) return;
-
+		console.log(object)
+		
 		let uuid = null;
 
 		if ( object !== null ) {
@@ -83,9 +84,12 @@ class Selector {
 			uuid = object.uuid;
 
 		}
-
 		this.editor.selected = object;
 		this.editor.config.setKey( 'selected', uuid );
+		if (object?.userData?.isModel){
+			this.signals.objectSelected.dispatch( object, false );
+			return 
+		};
 
 		this.signals.objectSelected.dispatch( object );
 
