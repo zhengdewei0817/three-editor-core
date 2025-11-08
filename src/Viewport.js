@@ -18,6 +18,7 @@ import { SetScaleCommand } from './commands/SetScaleCommand.js';
 
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { ViewportPathtracer } from './Viewport.Pathtracer.js';
+import TWEEN from 'three/addons/libs/tween.module.js';
 
 function Viewport( editor ) {
 
@@ -283,6 +284,9 @@ function Viewport( editor ) {
 
 	} );
 	viewHelper.center = controls.center;
+
+	// 暴露 controls.center 给 editor，以便外部可以更新旋转中心
+	editor.controlsCenter = controls.center;
 
 	// signals
 
@@ -796,6 +800,9 @@ function Viewport( editor ) {
 			}
 
 		}
+
+		// TWEEN animations
+		TWEEN.update();
 
 		// View Helper
 

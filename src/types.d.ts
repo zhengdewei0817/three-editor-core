@@ -1,118 +1,234 @@
 import * as THREE from 'three';
 
+// 信号类型定义
+interface Signal {
+  add(listener: Function): void;
+  remove(listener: Function): void;
+  dispatch(...args: any[]): void;
+  active?: boolean;
+}
+
 export class Editor {
   // 信号系统
   signals: {
     // script
-    scriptAdded: any;
-    scriptRemoved: any;
-    scriptChanged: any;
+    editScript: Signal;
+    scriptAdded: Signal;
+    scriptChanged: Signal;
+    scriptRemoved: Signal;
     
     // player
-    startPlayer: any;
-    stopPlayer: any;
+    startPlayer: Signal;
+    stopPlayer: Signal;
+    
+    // xr
+    enterXR: Signal;
+    offerXR: Signal;
+    leaveXR: Signal;
     
     // notifications
-    showNotification: any;
-    
-    // scene
-    sceneBackgroundChanged: any;
-    sceneEnvironmentChanged: any;
-    sceneFogChanged: any;
-    sceneGraphChanged: any;
-    
-    // object
-    objectAdded: any;
-    objectChanged: any;
-    objectFocused: any;
-    objectRemoved: any;
-    objectSelected: any;
-    
-    // geometry
-    geometryChanged: any;
-    
-    // material
-    materialAdded: any;
-    materialChanged: any;
-    materialRemoved: any;
-    
-    // texture
-    textureChanged: any;
-    
-    // camera
-    cameraAdded: any;
-    cameraRemoved: any;
-    cameraChanged: any;
-    
-    // viewport
-    viewportCameraChanged: any;
-    viewportShadingChanged: any;
+    editorCleared: Signal;
+    savingStarted: Signal;
+    savingFinished: Signal;
     
     // transform
-    transformModeChanged: any;
-    snapChanged: any;
-    spaceChanged: any;
+    transformModeChanged: Signal;
+    snapChanged: Signal;
+    spaceChanged: Signal;
     
-    // history
-    historyChanged: any;
+    // renderer
+    rendererCreated: Signal;
+    rendererUpdated: Signal;
+    rendererDetectKTX2Support: Signal;
+    
+    // scene
+    sceneBackgroundChanged: Signal;
+    sceneEnvironmentChanged: Signal;
+    sceneFogChanged: Signal;
+    sceneFogSettingsChanged: Signal;
+    sceneGraphChanged: Signal;
+    sceneRendered: Signal;
+    
+    // camera
+    cameraChanged: Signal;
+    cameraResetted: Signal;
+    cameraAdded: Signal;
+    cameraRemoved: Signal;
+    
+    // geometry
+    geometryChanged: Signal;
+    
+    // object
+    objectSelected: Signal;
+    objectFocused: Signal;
+    objectAdded: Signal;
+    objectChanged: Signal;
+    objectRemoved: Signal;
+    
+    // helper
+    helperAdded: Signal;
+    helperRemoved: Signal;
+    
+    // material
+    materialAdded: Signal;
+    materialChanged: Signal;
+    materialRemoved: Signal;
+    
+    // window
+    windowResize: Signal;
+    
+    // helpers
+    showHelpersChanged: Signal;
     
     // refresh
-    refreshSidebarObject3D: any;
-    refreshSidebarEnvironment: any;
+    refreshSidebarObject3D: Signal;
+    refreshSidebarEnvironment: Signal;
+    
+    // history
+    historyChanged: Signal;
+    
+    // viewport
+    viewportCameraChanged: Signal;
+    viewportShadingChanged: Signal;
+    
+    // intersections
+    intersectionsDetected: Signal;
+    
+    // pathtracer
+    pathTracerUpdated: Signal;
+    
+    // schema
+    updataSchema: Signal;
   };
+
+  // 数据属性
+  data: Record<string, any>;
+  oloData: Record<string, any>;
+  controlsCenter?: THREE.Vector3;
 
   // 核心属性
   scene: THREE.Scene;
   camera: THREE.Camera;
-  renderer: THREE.WebGLRenderer;
+  sceneHelpers: THREE.Scene;
   
   // 配置和工具
   config: any;
   history: any;
-  strings: any;
-  storage: any;
-  loader: any;
   selector: any;
+  storage: any;
+  strings: any;
+  loader: any;
+
+  // 资源管理
+  object: Record<string, any>;
+  geometries: Record<string, THREE.BufferGeometry>;
+  materials: Record<string, THREE.Material>;
+  textures: Record<string, THREE.Texture>;
+  scripts: Record<string, any[]>;
+  
+  // 材质引用计数器
+  materialsRefCounter: Map<THREE.Material, number>;
+  
+  // 动画混合器
+  mixer: THREE.AnimationMixer;
+  
+  // 选择相关
+  selected: THREE.Object3D | null;
+  helpers: Record<number, any>;
+  
+  // 相机管理
+  cameras: Record<string, THREE.Camera>;
+  
+  // 视口相关
+  viewportCamera: THREE.Camera;
+  viewportShading: string;
 
   constructor();
   
-  // 核心方法
+  // 事件监听
+  addEvent(): void;
+  
+  // 场景管理
+  setScene(scene: THREE.Scene): void;
+  clear(): void;
+  clearObjects(): void;
+  fromJSON(json: any): Promise<void>;
+  toJSON(): any;
+  
+  // 对象管理
   addObject(object: THREE.Object3D, parent?: THREE.Object3D, index?: number): void;
-  moveObject(object: THREE.Object3D, parent: THREE.Object3D, before?: THREE.Object3D): void;
   nameObject(object: THREE.Object3D, name: string): void;
   removeObject(object: THREE.Object3D): void;
+  
+  // 几何体管理
   addGeometry(geometry: THREE.BufferGeometry): void;
   setGeometryName(geometry: THREE.BufferGeometry, name: string): void;
-  addMaterial(material: THREE.Material): void;
+  
+  // 材质管理
+  addMaterial(material: THREE.Material | THREE.Material[]): void;
+  addMaterialToRefCounter(material: THREE.Material): void;
+  removeMaterial(material: THREE.Material | THREE.Material[]): void;
+  removeMaterialFromRefCounter(material: THREE.Material): void;
+  getMaterialById(id: number): THREE.Material | undefined;
   setMaterialName(material: THREE.Material, name: string): void;
+  getObjectMaterial(object: THREE.Object3D, slot?: number): THREE.Material;
+  setObjectMaterial(object: THREE.Object3D, slot: number | undefined, newMaterial: THREE.Material): void;
+  
+  // 纹理管理
   addTexture(texture: THREE.Texture): void;
-  setTextureName(texture: THREE.Texture, name: string): void;
+  
+  // 相机管理
   addCamera(camera: THREE.Camera): void;
   removeCamera(camera: THREE.Camera): void;
+  
+  // 辅助对象管理
+  addHelper(object: THREE.Object3D, helper?: any): void;
+  removeHelper(object: THREE.Object3D): void;
+  
+  // 脚本管理
+  addScript(object: THREE.Object3D, script: any): void;
+  removeScript(object: THREE.Object3D, script: any): void;
+  
+  // 视口相关
+  setViewportCamera(uuid: string): void;
+  setViewportShading(value: string): void;
   
   // 选择相关
   select(object: THREE.Object3D | null): void;
   selectById(id: number): void;
   selectByUuid(uuid: string): void;
   deselect(): void;
-  focus(object: THREE.Object3D): void;
+  focus(object: THREE.Object3D | undefined): void;
   focusById(id: number): void;
-  focusByUuid(uuid: string): void;
   
   // 查找方法
   objectByUuid(uuid: string): THREE.Object3D | undefined;
-  objectById(id: number): THREE.Object3D | undefined;
-  materialByUuid(uuid: string): THREE.Material | undefined;
   
-  // 场景管理
-  setScene(scene: THREE.Scene): void;
-  clear(): void;
-  fromJSON(json: any): void;
-  toJSON(): any;
+  // 历史记录
+  execute(cmd: any, optionalName?: string): void;
+  undo(): void;
+  redo(): void;
   
-  // 视口相关
-  setViewportCamera(camera: THREE.Camera): void;
-  setViewportShading(shading: string): void;
+  // 工具方法
+  utils: {
+    save(blob: Blob, filename?: string): void;
+    saveArrayBuffer(buffer: ArrayBuffer, filename?: string): void;
+    saveString(text: string, filename?: string): void;
+    formatNumber(number: number): string;
+  };
+  
+  // 初始化和销毁
+  init(options: { width?: number; height?: number }): void;
+  destroy(): void;
+  
+  // 数据管理
+  setData(data: any, options?: { mergeUpdate?: boolean }, callback?: () => void): void;
+  diffData(data: any, oldData: any, isRoot?: boolean, rootName?: string, rootData?: any): any;
+  _updateByField(rootName: string, key: string, newVal: any, oldVal: any, rootData: any): void;
+  _addByData(name: string, value: any): void;
+  
+  // 方法调用
+  callFun(methodName: string, targetUUID: string, type: string, data: any): Promise<void>;
 }
 
 // 为全局对象提供类型声明
@@ -120,4 +236,17 @@ declare global {
   interface Window {
     THREE: typeof THREE;
   }
-} 
+}
+
+// 方法 API 事件常量类型定义
+export const METHODSAPI_EVENTS: {
+  readonly CAMERA: {
+    readonly GET_MAIN_CAMERA: 'Camera';
+    readonly FLY_CAMERA_TO: 'CameraFlyCameraTo';
+  };
+  readonly COMPONENTS: {
+    readonly SHOW: 'ComponentsShow';
+    readonly HIDDEN: 'ComponentsHidden';
+    readonly TOGGLE: 'ComponentsToggle';
+  };
+};

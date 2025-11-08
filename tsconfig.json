@@ -19,7 +19,7 @@
     "noImplicitOverride": false,
     "noPropertyAccessFromIndexSignature": false,
     "exactOptionalPropertyTypes": false,
-    "declaration": false,
+    "declaration": true,
     "declarationMap": false,
     "outDir": "./dist",
     "rootDir": "./src",

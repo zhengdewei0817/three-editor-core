@@ -15,6 +15,7 @@ import { createPointLight, setProps as setPointLightProps, updataUI as updataPoi
 import { createAmbientLight, setProps as setAmbientLightProps, updataUI as updataAmbientLightUI } from './components/AmbientLight.js';
 import { createDirectionalLight, setProps as setDirectionalLightProps, updataUI as updataDirectionalLightUI } from './components/DirectionalLight.js';
 import { createModel } from './components/Model.js';
+import methodsApi from './methodsApi/index';
 
 var _DEFAULT_CAMERA = new THREE.PerspectiveCamera(50, 1, 0.01, 1000);
 _DEFAULT_CAMERA.name = 'Camera';
@@ -106,7 +107,8 @@ function Editor() {
 	};
 	this.data = {};
 	this.oloData = {};
-
+	this.controlsCenter = null;
+	this.renderer = null;
 	this.config = new Config();
 	this.history = new _History(this);
 	this.selector = new Selector(this);
@@ -118,6 +120,7 @@ function Editor() {
 	this.camera = _DEFAULT_CAMERA.clone();
 
 	this.scene = new THREE.Scene();
+	console.log('this.scene', this)
 	this.scene.name = 'Scene';
 
 	this.sceneHelpers = new THREE.Scene();
@@ -144,7 +147,9 @@ function Editor() {
 	this.addCamera(this.camera);
 
 	this.addEvent();
-	new SidebarSettingsShortcuts(this);
+	setTimeout(() => {
+		new SidebarSettingsShortcuts(this);
+	}, 3000)
 }
 
 Editor.prototype = {
@@ -816,6 +821,9 @@ Editor.prototype = {
 		renderer.setSize(width, height);
 		renderer.shadowMap.enabled = true;
  		renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+		renderer.domElement.setAttribute('tabindex', '0');
+		renderer.domElement.style.outline = 'none';
+		this.renderer = renderer;
 		this.signals.rendererCreated.dispatch(renderer);
 	},
 	destroy: function () {
@@ -939,6 +947,12 @@ Editor.prototype = {
 				break;
 			default:
 				break;
+		}
+	},
+	async callFun (methodName, targetUUID, type, data) {
+		const method = methodsApi[methodName];
+		if (method) {
+			await method(this, targetUUID, type, data);
 		}
 	}
 };

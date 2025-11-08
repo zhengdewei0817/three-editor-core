@@ -14,7 +14,7 @@ export function SidebarSettingsShortcuts(editor: Editor) {
   const config = editor.config;
   const signals = editor.signals;
 
-  document.addEventListener("keydown", function (event) {
+  editor.renderer.domElement.addEventListener("keydown", function (event) {
     switch (event.key.toLowerCase()) {
       case "backspace":
         event.preventDefault(); // prevent browser back
