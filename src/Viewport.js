@@ -35,6 +35,7 @@ function Viewport( editor ) {
 	//
 
 	let renderer = null;
+	let cssRenderer = null;
 	let pmremGenerator = null;
 	let pathtracer = null;
 
@@ -338,7 +339,7 @@ function Viewport( editor ) {
 
 	} );
 
-	signals.rendererCreated.add( function ( newRenderer ) {
+	signals.rendererCreated.add( function ( newRenderer, newCSSRenderer ) {
 
 		if ( renderer !== null ) {
 
@@ -350,10 +351,18 @@ function Viewport( editor ) {
 
 		}
 
+		// 清理旧的 CSS3DRenderer DOM 元素
+		if ( cssRenderer !== null && cssRenderer.domElement.parentNode ) {
+
+			container.dom.removeChild( cssRenderer.domElement );
+
+		}
+
 		controls.connect( newRenderer.domElement );
 		transformControls.connect( newRenderer.domElement );
 
 		renderer = newRenderer;
+		cssRenderer = newCSSRenderer;
 
 		renderer.setAnimationLoop( animate );
 		renderer.setClearColor( 0xaaaaaa );
@@ -384,6 +393,21 @@ function Viewport( editor ) {
 		pathtracer = new ViewportPathtracer( renderer );
 
 		container.dom.appendChild( renderer.domElement );
+
+		// 添加 CSS3DRenderer DOM 元素到容器
+		if ( cssRenderer !== null ) {
+
+			cssRenderer.setSize( container.dom.offsetWidth, container.dom.offsetHeight );
+			
+			// 设置样式使其与 WebGL canvas 叠加
+			cssRenderer.domElement.style.position = 'absolute';
+			cssRenderer.domElement.style.top = '0';
+			cssRenderer.domElement.style.left = '0';
+			cssRenderer.domElement.style.pointerEvents = 'none';
+			
+			container.dom.appendChild( cssRenderer.domElement );
+
+		}
 
 		render();
 
@@ -886,8 +910,10 @@ function Viewport( editor ) {
 		startTime = performance.now();
 
 		renderer.setViewport( 0, 0, container.dom.offsetWidth, container.dom.offsetHeight );
+		if ( cssRenderer ) {
+			cssRenderer.render( scene, editor.viewportCamera );
+		}
 		renderer.render( scene, editor.viewportCamera );
-
 		if ( camera === editor.viewportCamera ) {
 
 			renderer.autoClear = false;

@@ -8,7 +8,10 @@ interface ModelConfig {
   type: string;
   config: {
     props: {
-      url: string;
+      url: {
+        fileUrl: string;
+        fileName: string;
+      };
     };
   };
 }

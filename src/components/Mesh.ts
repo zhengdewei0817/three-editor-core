@@ -4,6 +4,8 @@ import { SetRotationCommand } from "../commands/SetRotationCommand.js";
 import { SetScaleCommand } from "../commands/SetScaleCommand.js";
 import { SetMaterialColorCommand } from "../commands/SetMaterialColorCommand.js";
 import { SetMaterialValueCommand } from "../commands/SetMaterialValueCommand.js";
+
+import { CSS3DSprite } from "../jsm/renderers/CSS3DRenderer.js";
 interface MeshConfig {
   name: string;
   id: string;
@@ -43,13 +45,23 @@ export function createMesh(name: string, options: MeshConfig) {
   const object = new THREE.Mesh(cubeGeometry, cubeMaterial);
   object.userData.elementId = name;
   object.uuid = name;
+  	
+  // // 创建测试 CSS3D 元素
+  // const element = document.createElement('div');
+  // element.style.backgroundColor = 'red';
+  // element.textContent = '123123';
+  
+  // // 创建 CSS3DSprite 并添加到场景
+  // const sprite = new CSS3DSprite(element);
+  // sprite.position.set(object.position.x, object.position.y+2, object.position.z);
+  // sprite.scale.set(0.1, 0.1, 0.1);
+  // object.add(sprite);
+
   return object;
 }
 
 export function setProps(object: THREE.Mesh, key: string, value: any, editor) {
-  console.log(key, value);
   if (/position/.test(key)) {
-    console.log(object);
     let positionX = object.position.x;
     let positionY = object.position.y;
     let positionZ = object.position.z;
@@ -70,7 +82,6 @@ export function setProps(object: THREE.Mesh, key: string, value: any, editor) {
     return;
   }
   if (/rotation/.test(key)) {
-    console.log(object);
     let rotationX = object.rotation.x;
     let rotationY = object.rotation.y;
     let rotationZ = object.rotation.z;
@@ -85,7 +96,6 @@ export function setProps(object: THREE.Mesh, key: string, value: any, editor) {
     }
     const newRotation = new THREE.Euler( rotationX * THREE.MathUtils.DEG2RAD, rotationY * THREE.MathUtils.DEG2RAD, rotationZ * THREE.MathUtils.DEG2RAD );
 
-    console.log(newRotation);
     if ( new THREE.Vector3().setFromEuler( object.rotation ).distanceTo( new THREE.Vector3().setFromEuler( newRotation ) ) >= 0.01 ) {
         editor.execute( new SetRotationCommand( editor, object, newRotation ) );
 
@@ -93,7 +103,6 @@ export function setProps(object: THREE.Mesh, key: string, value: any, editor) {
     return;
   }
   if (/scale/.test(key)) {
-    console.log(object);
     let scaleX = object.scale.x;
     let scaleY = object.scale.y;
     let scaleZ = object.scale.z;
@@ -114,8 +123,6 @@ export function setProps(object: THREE.Mesh, key: string, value: any, editor) {
     }
   }
   if (/color/.test(key)) {
-    console.log('objectobjectobjectobjectobjectobject')
-    console.log(object);
     const newColor = new THREE.Color(value);
     if ( object.material.color !== undefined && object.material.color.getHex() !== newColor.getHex() ) {
         console.log(newColor);
@@ -124,13 +131,11 @@ export function setProps(object: THREE.Mesh, key: string, value: any, editor) {
     return;
   }
   if (/transparent/.test(key)) {
-    console.log(object);
     object.material.transparent = value;
     editor.execute( new SetMaterialValueCommand( editor, object, 'transparent', value ) );
     return;
   }
   if (/opacity/.test(key)) {
-    console.log(object);
     object.material.opacity = value;
     editor.execute( new SetMaterialValueCommand( editor, object, 'opacity', value ) );
     return;

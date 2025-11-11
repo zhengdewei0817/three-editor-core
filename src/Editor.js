@@ -16,14 +16,19 @@ import { createAmbientLight, setProps as setAmbientLightProps, updataUI as updat
 import { createDirectionalLight, setProps as setDirectionalLightProps, updataUI as updataDirectionalLightUI } from './components/DirectionalLight.js';
 import { createModel } from './components/Model.js';
 import methodsApi from './methodsApi/index';
+import { CSS3DRenderer, CSS3DSprite } from './jsm/renderers/CSS3DRenderer.js';
+import { pxToWorld, getObjectWorldHeight } from './utils/index.js';
 
 var _DEFAULT_CAMERA = new THREE.PerspectiveCamera(50, 1, 0.01, 1000);
 _DEFAULT_CAMERA.name = 'Camera';
 _DEFAULT_CAMERA.position.set(0, 5, 10);
 _DEFAULT_CAMERA.lookAt(new THREE.Vector3());
 
-function Editor() {
 
+function Editor(options) {
+
+	this.options = options || {};
+	
 	this.signals = {
 
 		// script
@@ -109,6 +114,7 @@ function Editor() {
 	this.oloData = {};
 	this.controlsCenter = null;
 	this.renderer = null;
+	this.cssRenderer = null;
 	this.config = new Config();
 	this.history = new _History(this);
 	this.selector = new Selector(this);
@@ -145,17 +151,62 @@ function Editor() {
 	this.viewportShading = 'default';
 
 	this.addCamera(this.camera);
-
 	this.addEvent();
+	this.addThreePrototype();
 	setTimeout(() => {
 		new SidebarSettingsShortcuts(this);
 	}, 3000)
 }
 
 Editor.prototype = {
+	addThreePrototype: function () {
+		const markFactory = this.options.markFactory || function () {};
+		THREE.Object3D.prototype.addMarker = function (editor, targetUUID, type, data) {
+			console.log('addAA');
+			if (this.hasMarker){
+				return true;
+			}
+			const mark = markFactory(editor, targetUUID, type, data);
+			if (!mark) return false;
+			const sprite = new CSS3DSprite(mark, { pointerEvents: 'none' });
+			const height = getObjectWorldHeight(this);
+			// requestAnimationFrame(() => {
+				// const rect = sprite.element.getBoundingClientRect();
+				// sprite.element.style.transformOrigin = 'center bottom';
+				// const heightPx = rect.height;
+			  
+				// // 1️⃣ 获取 Sprite 距相机的距离
+				// const worldPos = new THREE.Vector3();
+				// sprite.getWorldPosition(worldPos);
+				// const distance = worldPos.distanceTo(editor.camera.position);
+			  
+				// // 2️⃣ 将像素高度转为世界单位
+				// const worldHeight = pxToWorld(heightPx, editor.camera, distance);
+				// // 3️⃣ 重新设置 sprite 的位置，使底部对齐 5个单位上方
+				// sprite.position.set(0, height + worldHeight, 0);
+				// console.log(`Sprite 高度(px): ${heightPx}, 转换后: ${worldHeight.toFixed(3)} 世界单位`);
+				// editor.signals.rendererUpdated.dispatch();
+			//   });
+			// sprite.element.style.transformOrigin = 'center bottom'; // 设置为左上角
+			sprite.position.set(0, height, 0);
+			sprite.scale.set(0.01, 0.01, 0.01);
+			this.add(sprite);
+			this.marker = sprite;
+			this.hasMarker = true;
+			
+			return true;
+		}
+		THREE.Object3D.prototype.removeMarker = function () {
+			if (!this.hasMarker) return true;
+			// 删除这个div
+			this.marker.element.remove();
+			this.remove(this.marker);
+			this.hasMarker = false;
+			return true;
+		}
+	},
 	addEvent: function () {
 		this.signals.objectChanged.add((object) => {
-			console.log(object);
 			const type = object.type;
 			let res;
 			switch (type) {
@@ -823,8 +874,16 @@ Editor.prototype = {
  		renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 		renderer.domElement.setAttribute('tabindex', '0');
 		renderer.domElement.style.outline = 'none';
+		let cssRenderer = null;
+		if (this.options.useCSS3D) {
+			// 创建独立的 CSS3DRenderer
+			cssRenderer = new CSS3DRenderer();
+			cssRenderer.setSize(width, height);
+			this.cssRenderer = cssRenderer;
+		}
+		
 		this.renderer = renderer;
-		this.signals.rendererCreated.dispatch(renderer);
+		this.signals.rendererCreated.dispatch(renderer, cssRenderer);
 	},
 	destroy: function () {
 		this.signals.rendererCreated.removeAll();
@@ -858,7 +917,6 @@ Editor.prototype = {
 	},
 	diffData: function (data, oldData, isRoot, rootName, rootData) {
 		const res = diff(oldData, data, { full: true });
-		console.log(res);
 
 		Object.keys(res).forEach(key => {
 			const value = res[key];
@@ -881,20 +939,19 @@ Editor.prototype = {
 					Object.prototype.hasOwnProperty.call(value, '__old') &&
 					Object.prototype.hasOwnProperty.call(value, '__new')
 				) {
-					console.log(
-						`字段被修改: ${rootName}.${key}，旧值=${value.__old}，新值=${value.__new}`
-					);
+					// console.log(
+					// 	`字段被修改: ${rootName}.${key}，旧值=${value.__old}，新值=${value.__new}`
+					// );
 
 					// 👉 这里可以根据你的业务逻辑进一步处理
 					this._updateByField?.(rootName, key, value.__new, value.__old, rootData);
 				}
 				else if (value && Array.isArray(value)) {
-					console.log('array', value); // 这个暂时不处理
+					// console.log('array', value); // 这个暂时不处理
 					// this.diffData(value, [], false, rootName, rootData); 
 				}
 				// 如果是对象但不是__old/__new结构，可以继续递归进入子层
 				else if (value && typeof value === 'object') {
-					console.log('object', value);
 					this.diffData(value, {}, false, rootName, rootData); // 可选：递归查找更深层的__old/__new
 				}
 			}
@@ -903,7 +960,6 @@ Editor.prototype = {
 		return res;
 	},
 	_updateByField(rootName, key, newVal, oldVal, rootData) {
-		console.log(rootName, key, newVal, oldVal, rootData);
 		const type = rootData[rootName]?.type || '';
 		const object = this.objectByUuid(rootName)
 		switch (type) {
@@ -930,7 +986,6 @@ Editor.prototype = {
 		switch (type) {
 			case "Mesh":
 				object = createMesh(name, value, this);
-				console.log(object);
 				this.addObject(object);
 				break;
 			case "PointLight":
@@ -950,6 +1005,11 @@ Editor.prototype = {
 		}
 	},
 	async callFun (methodName, targetUUID, type, data) {
+		const ingoringMethods = ['addMarker', 'removeMarker'];
+		if (ingoringMethods.includes(methodName)) {
+			await this.objectByUuid(targetUUID)?.[methodName](this, targetUUID, type, data);
+			return;
+		}
 		const method = methodsApi[methodName];
 		if (method) {
 			await method(this, targetUUID, type, data);

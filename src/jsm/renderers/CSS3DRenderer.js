@@ -24,7 +24,7 @@ class CSS3DObject extends Object3D {
 	 *
 	 * @param {DOMElement} [element] - The DOM element.
 	 */
-	constructor( element = document.createElement( 'div' ) ) {
+	constructor( element = document.createElement( 'div' ), options = {} ) {
 
 		super();
 
@@ -46,7 +46,7 @@ class CSS3DObject extends Object3D {
 		 */
 		this.element = element;
 		this.element.style.position = 'absolute';
-		this.element.style.pointerEvents = 'auto';
+		this.element.style.pointerEvents = options.pointerEvents || 'auto';
 		this.element.style.userSelect = 'none';
 
 		this.element.setAttribute( 'draggable', false );
@@ -96,9 +96,9 @@ class CSS3DSprite extends CSS3DObject {
 	 *
 	 * @param {DOMElement} [element] - The DOM element.
 	 */
-	constructor( element ) {
+	constructor( element, options = {} ) {
 
-		super( element );
+		super( element, options );
 
 		/**
 		 * This flag can be used for type testing.

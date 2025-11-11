@@ -143,7 +143,8 @@ export class Editor {
   viewportCamera: THREE.Camera;
   viewportShading: string;
 
-  constructor();
+  constructor(options: { useCSS3D?: boolean });
+  cssRenderer: CSS3DRenderer | null;
   
   // 事件监听
   addEvent(): void;

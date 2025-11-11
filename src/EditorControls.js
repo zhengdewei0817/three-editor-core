@@ -41,8 +41,6 @@ class EditorControls extends THREE.EventDispatcher {
 		var changeEvent = { type: 'change' };
 
 		this.focus = function ( target ) {
-
-			console.log('focus');
 			var distance;
 
 			box.setFromObject( target );
@@ -72,7 +70,6 @@ class EditorControls extends THREE.EventDispatcher {
 		};
 
 		this.pan = function ( delta ) {
-			console.log('pan');
 			var distance = object.position.distanceTo( center );
 
 			delta.multiplyScalar( distance * scope.panSpeed );
@@ -102,7 +99,6 @@ class EditorControls extends THREE.EventDispatcher {
 		};
 
 		this.rotate = function ( delta ) {
-			console.log('rotate');
 			vector.copy( object.position ).sub( center );
 
 			spherical.setFromVector3( vector );
@@ -158,7 +154,6 @@ class EditorControls extends THREE.EventDispatcher {
 		}
 
 		function onPointerMove( event ) {
-			console.log('onPointerMove');
 			if ( scope.enabled === false ) return;
 
 			if ( event.pointerType === 'touch' ) {

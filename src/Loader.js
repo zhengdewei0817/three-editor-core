@@ -807,7 +807,7 @@ function Loader( editor ) {
 		} );
 		const res = []
 		for (const url of urls) {
-			const result = await this.loadByUrl(url, manager, options, onProgress, onError, extraOptions);
+			const result = await this.loadByUrl(url.fileUrl, url.fileName, manager, options, onProgress, onError, extraOptions);
 			if (options.getModel) {
 				res.push(result);
 			}
@@ -815,13 +815,11 @@ function Loader( editor ) {
 		return res;
 	}
 
-	this.loadByUrl = async function (fileUrl, manager, options, onProgress, onError, extraOptions) {
-		const cleanUrl = fileUrl.split('?')[0].split('#')[0];
-		// 提取文件名（去掉路径）
-		const filename = cleanUrl.substring(cleanUrl.lastIndexOf('/') + 1);
+	this.loadByUrl = async function (fileUrl, fileName, manager, options, onProgress, onError, extraOptions) {
 		// 提取扩展名
-		const extension = filename.split('.').pop().toLowerCase();
-
+		const fileInfo = fileName.split('.')
+		const extension = fileInfo.pop().toLowerCase();
+		const filename = fileInfo[0];
 		switch (extension) {
 			case 'glb':
 				{
