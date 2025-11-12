@@ -4,7 +4,7 @@ import { SetRotationCommand } from "../commands/SetRotationCommand.js";
 import { SetScaleCommand } from "../commands/SetScaleCommand.js";
 import { SetMaterialColorCommand } from "../commands/SetMaterialColorCommand.js";
 import { SetMaterialValueCommand } from "../commands/SetMaterialValueCommand.js";
-
+import { Editor } from "../Editor";
 import { CSS3DSprite } from "../jsm/renderers/CSS3DRenderer.js";
 interface MeshConfig {
   name: string;
