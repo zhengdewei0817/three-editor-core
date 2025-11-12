@@ -60,6 +60,11 @@ function Viewport( editor ) {
 	grid2.material.vertexColors = false;
 	grid.add( grid2 );
 
+
+	if (editor.options.isPlayer) {
+		grid.visible = false;
+	}
+
 	const viewHelper = new ViewHelper( camera, container );
 
 	//
@@ -286,7 +291,18 @@ function Viewport( editor ) {
 		// 如果是 Player 模式，限制相机不能进入地平面以下
 		if ( editor.options.isPlayer ) {
 			const minY = 1; // 最小高度，可以根据需要调整
-			camera.position.y  = Math.max(camera.position.y, minY);
+			camera.position.y = Math.max(camera.position.y, minY);
+			const minDistance = 5;
+			// 限制摄像头到中心点的最远距离
+			const maxDistance = editor.skyOptions?.radius || 100;
+			const distance = camera.position.distanceTo(controls.center);
+			if (distance > maxDistance) {
+				const direction = camera.position.clone().sub(controls.center).normalize();
+				camera.position.copy(controls.center).add(direction.multiplyScalar(maxDistance));
+			}  else if (distance < minDistance) {
+				const direction = camera.position.clone().sub(controls.center).normalize();
+				camera.position.copy(controls.center).add(direction.multiplyScalar(minDistance));
+			}
 		}
 
 	} );

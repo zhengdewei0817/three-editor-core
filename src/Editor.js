@@ -176,7 +176,10 @@ Editor.prototype = {
 		
 		const height = options.height || 50;
 		const radius = options.radius || 100;
-		
+		this.skyOptions = {
+			height,
+			radius,
+		};
 		const loader = new HDRLoader();
 		loader.load(
 			hdrPath,  // 由使用者提供可访问的路径
