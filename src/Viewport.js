@@ -407,7 +407,14 @@ function Viewport( editor ) {
 		pathtracer = new ViewportPathtracer( renderer );
 
 		container.dom.appendChild( renderer.domElement );
-
+		if (newCSSRenderer) {
+			const cssElement = newCSSRenderer.domElement;
+			cssElement.style.position = 'absolute';
+			cssElement.style.top = '0';
+			cssElement.style.left = '0';
+			cssElement.style.pointerEvents = 'none'; // 让鼠标事件穿透到 WebGL canvas
+			container.dom.appendChild(cssElement);
+		}
 		render();
 
 	} );

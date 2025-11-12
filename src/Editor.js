@@ -232,7 +232,7 @@ Editor.prototype = {
 				// editor.signals.rendererUpdated.dispatch();
 			//   });
 			// sprite.element.style.transformOrigin = 'center bottom'; // 设置为左上角
-			sprite.position.set(0, height, 0);
+			sprite.position.set(0, 0, 0);
 			sprite.scale.set(0.01, 0.01, 0.01);
 			this.add(sprite);
 			this.marker = sprite;
