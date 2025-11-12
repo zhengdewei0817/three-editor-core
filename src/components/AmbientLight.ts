@@ -32,6 +32,10 @@ export function createAmbientLight(name: string, options: AmbientLightConfig, ed
   ambientLight.position.set(positionX, positionY, positionZ);
   ambientLight.name = name;
   ambientLight.uuid = name;
+  Object.keys(options.config.props).forEach(key => {
+    options.config.props[key];
+    setProps(ambientLight, key, options.config.props[key], editor);
+  });
   editor.execute(new AddObjectCommand(editor, ambientLight));
 }
 

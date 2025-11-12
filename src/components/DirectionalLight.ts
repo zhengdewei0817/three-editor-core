@@ -32,7 +32,10 @@ export function createDirectionalLight(name: string, options: DirectionalLightCo
   directionalLight.name = name;
   directionalLight.uuid = name;
   directionalLight.castShadow = true; // 必须开启！
-
+  Object.keys(options.config.props).forEach(key => {
+    options.config.props[key];
+    setProps(directionalLight, key, options.config.props[key], editor);
+  });
   editor.execute(new AddObjectCommand(editor, directionalLight));
 }
 

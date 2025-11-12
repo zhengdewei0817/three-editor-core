@@ -39,6 +39,10 @@ export function createPointLight(
   pointLight.position.set(positionX, positionY, positionZ);
   pointLight.name = name;
   pointLight.uuid = name;
+  Object.keys(options.config.props).forEach(key => {
+    options.config.props[key];
+    setProps(pointLight, key, options.config.props[key], editor);
+  });
   editor.execute(new AddObjectCommand(editor, pointLight));
 }
 

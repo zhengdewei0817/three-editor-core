@@ -14,10 +14,15 @@ import { SidebarSettingsShortcuts } from './Shortcuts';
 import { createPointLight, setProps as setPointLightProps, updataUI as updataPointLightUI } from './components/PointLight.js';
 import { createAmbientLight, setProps as setAmbientLightProps, updataUI as updataAmbientLightUI } from './components/AmbientLight.js';
 import { createDirectionalLight, setProps as setDirectionalLightProps, updataUI as updataDirectionalLightUI } from './components/DirectionalLight.js';
-import { createModel } from './components/Model.js';
+import { createModel, updataUI as updataModelUI } from './components/Model.js';
+import { createCamera, setProps as setCameraProps, updataUI as updataCameraUI } from './components/Camera.js';
 import methodsApi from './methodsApi/index';
 import { CSS3DRenderer, CSS3DSprite } from './jsm/renderers/CSS3DRenderer.js';
 import { pxToWorld, getObjectWorldHeight } from './utils/index.js';
+import { Sky } from './jsm/objects/Sky.js';
+import { GroundedSkybox } from './jsm/objects/GroundedSkybox.js';
+import { HDRLoader } from './jsm/loaders/HDRLoader.js';
+import { EquirectangularReflectionMapping } from 'three';
 
 var _DEFAULT_CAMERA = new THREE.PerspectiveCamera(50, 1, 0.01, 1000);
 _DEFAULT_CAMERA.name = 'Camera';
@@ -153,12 +158,48 @@ function Editor(options) {
 	this.addCamera(this.camera);
 	this.addEvent();
 	this.addThreePrototype();
+	if (this.options.callback) {
+		this.options.callback(this);
+	}
+	this.signals.cameraAdded.dispatch(this.camera);
 	setTimeout(() => {
 		new SidebarSettingsShortcuts(this);
 	}, 3000)
 }
 
 Editor.prototype = {
+	addSkyToScene: function (hdrPath, options = {}) {
+		if (!hdrPath) {
+			console.warn('请提供 HDR 文件路径');
+			return;
+		}
+		
+		const height = options.height || 50;
+		const radius = options.radius || 100;
+		
+		const loader = new HDRLoader();
+		loader.load(
+			hdrPath,  // 由使用者提供可访问的路径
+			(texture) => {
+				texture.mapping = EquirectangularReflectionMapping;
+				const skybox = new GroundedSkybox(texture, height, radius);
+				skybox.position.y = height;
+				skybox.name = 'Sky';
+				this.scene.add(skybox);
+				this.scene.environment = texture;
+				this.signals.sceneGraphChanged.dispatch(this.scene);
+
+			},
+			undefined,
+			(error) => {
+				console.error('加载 HDR 失败:', error);
+			}
+		);
+	},
+	removeSkyFromScene: function () {
+		this.scene.remove(this.scene.getObjectByProperty('name', 'Sky'));
+		this.scene.environment = null;
+	},
 	addThreePrototype: function () {
 		const markFactory = this.options.markFactory || function () {};
 		THREE.Object3D.prototype.addMarker = function (editor, targetUUID, type, data) {
@@ -208,7 +249,16 @@ Editor.prototype = {
 	addEvent: function () {
 		this.signals.objectChanged.add((object) => {
 			const type = object.type;
+			const uuid = object.uuid;
 			let res;
+			if (/^Model_/.test(uuid)) {
+				this.signals.updataSchema.dispatch({
+					uuid: object.uuid,
+					props: updataModelUI(object),
+				});
+				return;
+			}
+			
 			switch (type) {
 				case 'Mesh':
 					res = updataMeshUI(object);
@@ -233,6 +283,13 @@ Editor.prototype = {
 					break;
 				case 'DirectionalLight':
 					res = updataDirectionalLightUI(object);
+					this.signals.updataSchema.dispatch({
+						uuid: object.uuid,
+						props: res,
+					});
+					break;
+				case 'Camera':
+					res = updataCameraUI(object);
 					this.signals.updataSchema.dispatch({
 						uuid: object.uuid,
 						props: res,
@@ -471,7 +528,12 @@ Editor.prototype = {
 		}
 
 	},
-
+	setCamera: function (cameraOptions) {
+		const camera = this.camera;
+		Object.keys(cameraOptions).forEach((key) => {
+			setCameraProps(camera, key, cameraOptions[key], this);
+		});
+	},
 	removeCamera: function (camera) {
 
 		if (this.cameras[camera.uuid] !== undefined) {
@@ -975,6 +1037,9 @@ Editor.prototype = {
 			case "DirectionalLight":
 				setDirectionalLightProps(object, key, newVal, this);
 				break;
+			case "Camera":
+				setCameraProps(object, key, newVal, this);
+				break;
 			default:
 				break;
 		}
@@ -999,6 +1064,9 @@ Editor.prototype = {
 				break;
 			case "Model":
 				createModel(name, value, this);
+				break;
+			case "Camera":
+				createCamera(name, value, this);
 				break;
 			default:
 				break;

@@ -32,7 +32,7 @@ interface MeshConfig {
   };
 }
 
-export function createMesh(name: string, options: MeshConfig) {
+export function createMesh(name: string, options: MeshConfig, editor: Editor) {
   const props = options.config.props || {};
   const width = props.width || 1;
   const height = props.height || 1;
@@ -46,6 +46,10 @@ export function createMesh(name: string, options: MeshConfig) {
   object.userData.elementId = name;
   object.uuid = name;
   	
+  Object.keys(options.config.props).forEach(key => {
+    options.config.props[key];
+    setProps(object, key, options.config.props[key], editor);
+  });
   // // 创建测试 CSS3D 元素
   // const element = document.createElement('div');
   // element.style.backgroundColor = 'red';

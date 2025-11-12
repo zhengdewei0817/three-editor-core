@@ -8,6 +8,43 @@ import { LoaderUtils } from './LoaderUtils.js';
 
 import { unzipSync, strFromU8 } from 'three/addons/libs/fflate.module.js';
 
+// 辅助函数：根据名字生成UUID，处理重名情况
+function generateUUIDFromName(name, nameCountMap) {
+	// 检查是否已经有相同名字
+	if (nameCountMap.has(name)) {
+		// 如果有，递增计数
+		const count = nameCountMap.get(name);
+		nameCountMap.set(name, count + 1);
+		// 生成带索引的唯一标识
+		return `${name}_${count}`;
+	} else {
+		// 首次出现，计数设为 1
+		nameCountMap.set(name, 1);
+		return name;
+	}
+}
+
+// 辅助函数：为场景中的所有对象设置基于名字的UUID
+function assignUUIDsToScene(scene) {
+	const nameCountMap = new Map();
+	
+	scene.traverse((child) => {
+		// 如果有 GLTF extras 中存储的 UUID，优先使用
+		if (child.userData.extras && child.userData.extras.uuid) {
+			child.uuid = child.userData.extras.uuid;
+		} 
+		// 否则基于节点名称生成确定性的 UUID
+		else if (child.name) {
+			child.uuid = generateUUIDFromName(child.name, nameCountMap);
+		}
+		// 如果没有名字，生成一个基于类型的名字
+		else {
+			const typeName = child.type || 'Object3D';
+			child.uuid = generateUUIDFromName(typeName, nameCountMap);
+		}
+	});
+}
+
 function Loader( editor ) {
 
 	const scope = this;
@@ -276,6 +313,10 @@ function Loader( editor ) {
 						scene.name = filename;
 
 						scene.animations.push( ...result.animations );
+						
+						// 为场景中的所有对象设置基于名字的UUID
+						assignUUIDsToScene( scene );
+						
 						editor.execute( new AddObjectCommand( editor, scene ) );
 
 						loader.dracoLoader.dispose();
@@ -306,6 +347,10 @@ function Loader( editor ) {
 						scene.name = filename;
 
 						scene.animations.push( ...result.animations );
+						
+						// 为场景中的所有对象设置基于名字的UUID
+						assignUUIDsToScene( scene );
+						
 						editor.execute( new AddObjectCommand( editor, scene ) );
 
 						loader.dracoLoader.dispose();
@@ -821,28 +866,31 @@ function Loader( editor ) {
 		const extension = fileInfo.pop().toLowerCase();
 		const filename = fileInfo[0];
 		switch (extension) {
-			case 'glb':
-				{
-					const loader = await createGLTFLoader();
-					return new Promise((resolve, reject) => {
-						loader.load(fileUrl, function (result) {
-							const scene = result.scene;
-							scene.name = filename;
-							scene.animations.push( ...result.animations );
-							
-							if (!options.getModel) {
-								editor.execute( new AddObjectCommand( editor, scene ) );
-							}
-							loader.dracoLoader.dispose();
-							loader.ktx2Loader.dispose();
-							resolve(scene);
-						}, (e) => {
-							onProgress && onProgress(e)
-						}, (err) => {
-							reject(err);
-						}, extraOptions);
-					})
-				}
+		case 'glb':
+			{
+				const loader = await createGLTFLoader();
+				return new Promise((resolve, reject) => {
+					loader.load(fileUrl, function (result) {
+						const scene = result.scene;
+						scene.name = filename;
+						scene.animations.push( ...result.animations );
+						
+						// 为场景中的所有对象设置基于名字的UUID
+						assignUUIDsToScene( scene );
+						
+						if (!options.getModel) {
+							editor.execute( new AddObjectCommand( editor, scene ) );
+						}
+						loader.dracoLoader.dispose();
+						loader.ktx2Loader.dispose();
+						resolve(scene);
+					}, (e) => {
+						onProgress && onProgress(e)
+					}, (err) => {
+						reject(err);
+					}, extraOptions);
+				})
+			}
 			default:
 				break;
 		}
@@ -980,49 +1028,57 @@ function Loader( editor ) {
 
 				}
 
-				case 'glb':
+			case 'glb':
 
-				{
+			{
 
-					const loader = await createGLTFLoader();
+				const loader = await createGLTFLoader();
 
-					loader.parse( file.buffer, '', function ( result ) {
+				loader.parse( file.buffer, '', function ( result ) {
 
-						const scene = result.scene;
+					const scene = result.scene;
 
-						scene.animations.push( ...result.animations );
-						editor.execute( new AddObjectCommand( editor, scene ) );
+					scene.animations.push( ...result.animations );
+					
+					// 为场景中的所有对象设置基于名字的UUID
+					assignUUIDsToScene( scene );
+					
+					editor.execute( new AddObjectCommand( editor, scene ) );
 
-						loader.dracoLoader.dispose();
-						loader.ktx2Loader.dispose();
+					loader.dracoLoader.dispose();
+					loader.ktx2Loader.dispose();
 
-					} );
+				} );
 
-					break;
+				break;
 
-				}
+			}
 
-				case 'gltf':
+			case 'gltf':
 
-				{
+			{
 
-					const loader = await createGLTFLoader( manager );
+				const loader = await createGLTFLoader( manager );
 
-					loader.parse( strFromU8( file ), '', function ( result ) {
+				loader.parse( strFromU8( file ), '', function ( result ) {
 
-						const scene = result.scene;
+					const scene = result.scene;
 
-						scene.animations.push( ...result.animations );
-						editor.execute( new AddObjectCommand( editor, scene ) );
+					scene.animations.push( ...result.animations );
+					
+					// 为场景中的所有对象设置基于名字的UUID
+					assignUUIDsToScene( scene );
+					
+					editor.execute( new AddObjectCommand( editor, scene ) );
 
-						loader.dracoLoader.dispose();
-						loader.ktx2Loader.dispose();
+					loader.dracoLoader.dispose();
+					loader.ktx2Loader.dispose();
 
-					} );
+				} );
 
-					break;
+				break;
 
-				}
+			}
 
 			}
 

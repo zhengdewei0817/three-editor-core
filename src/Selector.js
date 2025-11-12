@@ -86,6 +86,7 @@ class Selector {
 		}
 		this.editor.selected = object;
 		this.editor.config.setKey( 'selected', uuid );
+		if (object?.name === 'Sky' || this.editor?.options?.isPlayer === true) return;
 		if (object?.userData?.isModel){
 			this.signals.objectSelected.dispatch( object, false );
 			return 

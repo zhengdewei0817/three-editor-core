@@ -29,13 +29,13 @@ function Viewport( editor ) {
 	container.setId( 'viewport' );
 	container.setPosition( 'absolute' );
 
-	container.add( new ViewportControls( editor ) );
-	container.add( new ViewportInfo( editor ) );
-
+	if (!editor.options.isPlayer) {
+		container.add( new ViewportControls( editor ) );
+		container.add( new ViewportInfo( editor ) );
+	}
 	//
 
 	let renderer = null;
-	let cssRenderer = null;
 	let pmremGenerator = null;
 	let pathtracer = null;
 
@@ -283,6 +283,12 @@ function Viewport( editor ) {
 		signals.cameraChanged.dispatch( camera );
 		signals.refreshSidebarObject3D.dispatch( camera );
 
+		// 如果是 Player 模式，限制相机不能进入地平面以下
+		if ( editor.options.isPlayer ) {
+			const minY = 1; // 最小高度，可以根据需要调整
+			camera.position.y  = Math.max(camera.position.y, minY);
+		}
+
 	} );
 	viewHelper.center = controls.center;
 
@@ -351,18 +357,10 @@ function Viewport( editor ) {
 
 		}
 
-		// 清理旧的 CSS3DRenderer DOM 元素
-		if ( cssRenderer !== null && cssRenderer.domElement.parentNode ) {
-
-			container.dom.removeChild( cssRenderer.domElement );
-
-		}
-
 		controls.connect( newRenderer.domElement );
 		transformControls.connect( newRenderer.domElement );
 
 		renderer = newRenderer;
-		cssRenderer = newCSSRenderer;
 
 		renderer.setAnimationLoop( animate );
 		renderer.setClearColor( 0xaaaaaa );
@@ -393,21 +391,6 @@ function Viewport( editor ) {
 		pathtracer = new ViewportPathtracer( renderer );
 
 		container.dom.appendChild( renderer.domElement );
-
-		// 添加 CSS3DRenderer DOM 元素到容器
-		if ( cssRenderer !== null ) {
-
-			cssRenderer.setSize( container.dom.offsetWidth, container.dom.offsetHeight );
-			
-			// 设置样式使其与 WebGL canvas 叠加
-			cssRenderer.domElement.style.position = 'absolute';
-			cssRenderer.domElement.style.top = '0';
-			cssRenderer.domElement.style.left = '0';
-			cssRenderer.domElement.style.pointerEvents = 'none';
-			
-			container.dom.appendChild( cssRenderer.domElement );
-
-		}
 
 		render();
 
@@ -910,8 +893,8 @@ function Viewport( editor ) {
 		startTime = performance.now();
 
 		renderer.setViewport( 0, 0, container.dom.offsetWidth, container.dom.offsetHeight );
-		if ( cssRenderer ) {
-			cssRenderer.render( scene, editor.viewportCamera );
+		if (editor.cssRenderer) {
+			editor.cssRenderer.render( scene, editor.viewportCamera );
 		}
 		renderer.render( scene, editor.viewportCamera );
 		if ( camera === editor.viewportCamera ) {
