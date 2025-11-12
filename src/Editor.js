@@ -566,18 +566,26 @@ Editor.prototype = {
 
 				} else if (object.isPointLight) {
 
+					// 在播放器模式下不显示灯光边框
+					if (this.options.isPlayer) return;
 					helper = new THREE.PointLightHelper(object, 1);
 
 				} else if (object.isDirectionalLight) {
 
+					// 在播放器模式下不显示灯光边框
+					if (this.options.isPlayer) return;
 					helper = new THREE.DirectionalLightHelper(object, 1);
 
 				} else if (object.isSpotLight) {
 
+					// 在播放器模式下不显示灯光边框
+					if (this.options.isPlayer) return;
 					helper = new THREE.SpotLightHelper(object);
 
 				} else if (object.isHemisphereLight) {
 
+					// 在播放器模式下不显示灯光边框
+					if (this.options.isPlayer) return;
 					helper = new THREE.HemisphereLightHelper(object, 1);
 
 				} else if (object.isSkinnedMesh) {
