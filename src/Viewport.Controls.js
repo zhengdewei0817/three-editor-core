@@ -20,7 +20,7 @@ function ViewportControls( editor ) {
 		editor.setViewportCamera( this.getValue() );
 
 	} );
-	container.add( cameraSelect );
+	// container.add( cameraSelect );
 
 	signals.cameraAdded.add( update );
 	signals.cameraRemoved.add( update );
@@ -44,7 +44,7 @@ function ViewportControls( editor ) {
 		editor.setViewportShading( this.getValue() );
 
 	} );
-	container.add( shadingSelect );
+	// container.add( shadingSelect );
 
 	signals.editorCleared.add( function () {
 

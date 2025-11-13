@@ -15,7 +15,7 @@ class EditorControls extends THREE.EventDispatcher {
 		this.rotationSpeed = 0.005;
 
 		this.bounds = {
-			minY: 1,
+			minY: -99999,
 			minDistance: 3,
 			maxDistance: 80,
 			boxLimit: null // 可选 new THREE.Box3(new THREE.Vector3(-100, 0, -100), new THREE.Vector3(100, 200, 100))

@@ -45,6 +45,23 @@ function assignUUIDsToScene(scene) {
 	});
 }
 
+
+function markAsModel(object) {
+	console.log('object', object)
+	// object.userData.isModel = false;
+	object.traverse((child) => {
+		// console.log('child.uuid',child.uuid, /^Model_/.test(child.uuid))
+		if (!child.parent) {
+			// console.log('child', child)
+			return;
+		}
+		// if (child.id === 185) {
+		// 	console.log(child.name)
+		// }
+		child.userData.isModel = true;
+	});
+}
+
 function Loader( editor ) {
 
 	const scope = this;
@@ -287,7 +304,6 @@ function Loader( editor ) {
 
 					const loader = new FBXLoader( manager );
 					const object = loader.parse( contents );
-
 					editor.execute( new AddObjectCommand( editor, object ) );
 
 				}, false );
@@ -313,10 +329,9 @@ function Loader( editor ) {
 						scene.name = filename;
 
 						scene.animations.push( ...result.animations );
-						
 						// 为场景中的所有对象设置基于名字的UUID
 						assignUUIDsToScene( scene );
-						
+						markAsModel( scene );
 						editor.execute( new AddObjectCommand( editor, scene ) );
 
 						loader.dracoLoader.dispose();
@@ -350,7 +365,7 @@ function Loader( editor ) {
 						
 						// 为场景中的所有对象设置基于名字的UUID
 						assignUUIDsToScene( scene );
-						
+						markAsModel( scene );
 						editor.execute( new AddObjectCommand( editor, scene ) );
 
 						loader.dracoLoader.dispose();
@@ -878,6 +893,8 @@ function Loader( editor ) {
 						// 为场景中的所有对象设置基于名字的UUID
 						assignUUIDsToScene( scene );
 						
+						markAsModel( scene );
+
 						if (!options.getModel) {
 							editor.execute( new AddObjectCommand( editor, scene ) );
 						}

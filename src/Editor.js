@@ -24,7 +24,7 @@ import { GroundedSkybox } from './jsm/objects/GroundedSkybox.js';
 import { HDRLoader } from './jsm/loaders/HDRLoader.js';
 import { EquirectangularReflectionMapping } from 'three';
 
-var _DEFAULT_CAMERA = new THREE.PerspectiveCamera(50, 1, 0.01, 1000);
+var _DEFAULT_CAMERA = new THREE.PerspectiveCamera(50, 1, 0.01, 5000);
 _DEFAULT_CAMERA.name = 'Camera';
 _DEFAULT_CAMERA.position.set(0, 5, 10);
 _DEFAULT_CAMERA.lookAt(new THREE.Vector3());
@@ -208,43 +208,27 @@ Editor.prototype = {
 	addThreePrototype: function () {
 		const markFactory = this.options.markFactory || function () {};
 		THREE.Object3D.prototype.addMarker = function (editor, targetUUID, type, data) {
-			console.log('addAA');
 			if (this.hasMarker){
 				return true;
 			}
 			const mark = markFactory(editor, targetUUID, type, data);
-			if (!mark) return false;
-			const sprite = new CSS3DSprite(mark, { pointerEvents: 'none' });
+			if (!mark?.container) return false;
+			const sprite = new CSS3DSprite(mark?.container, { pointerEvents: 'none' });
 			const height = getObjectWorldHeight(this);
-			// requestAnimationFrame(() => {
-				// const rect = sprite.element.getBoundingClientRect();
-				// sprite.element.style.transformOrigin = 'center bottom';
-				// const heightPx = rect.height;
-			  
-				// // 1️⃣ 获取 Sprite 距相机的距离
-				// const worldPos = new THREE.Vector3();
-				// sprite.getWorldPosition(worldPos);
-				// const distance = worldPos.distanceTo(editor.camera.position);
-			  
-				// // 2️⃣ 将像素高度转为世界单位
-				// const worldHeight = pxToWorld(heightPx, editor.camera, distance);
-				// // 3️⃣ 重新设置 sprite 的位置，使底部对齐 5个单位上方
-				// sprite.position.set(0, height + worldHeight, 0);
-				// console.log(`Sprite 高度(px): ${heightPx}, 转换后: ${worldHeight.toFixed(3)} 世界单位`);
-				// editor.signals.rendererUpdated.dispatch();
-			//   });
-			// sprite.element.style.transformOrigin = 'center bottom'; // 设置为左上角
 			sprite.position.set(0, height, 0);
 			sprite.scale.set(0.01, 0.01, 0.01);
 			this.add(sprite);
 			this.marker = sprite;
 			this.hasMarker = true;
-			
+			this.__removeMark__ = mark?.remove || function () {};
 			return true;
 		}
 		THREE.Object3D.prototype.removeMarker = function () {
 			if (!this.hasMarker) return true;
 			// 删除这个div
+			if (this.__removeMark__) {
+				this.__removeMark__();
+			}
 			this.marker.element.remove();
 			this.remove(this.marker);
 			this.hasMarker = false;
@@ -1048,7 +1032,7 @@ Editor.prototype = {
 		}
 	},
 	_addByData(name, value) {
-		console.log(name, value);
+		// console.log(name, value);
 		const type = value?.type || '';
 		let object = null;
 		switch (type) {
@@ -1079,6 +1063,7 @@ Editor.prototype = {
 		const ingoringMethods = ['addMarker', 'removeMarker'];
 		if (ingoringMethods.includes(methodName)) {
 			await this.objectByUuid(targetUUID)?.[methodName](this, targetUUID, type, data);
+			this.signals.sceneGraphChanged.dispatch(this.scene);
 			return;
 		}
 		const method = methodsApi[methodName];

@@ -66,7 +66,7 @@ function Toolbar( editor ) {
 		signals.spaceChanged.dispatch( this.getValue() === true ? 'local' : 'world' );
 
 	} );
-	container.add( local );
+	// container.add( local );
 
 	//
 

@@ -3045,7 +3045,6 @@ class GLTFParser {
 			this.cache.add( cacheKey, dependency );
 
 		}
-
 		return dependency;
 
 	}
@@ -4425,7 +4424,7 @@ class GLTFParser {
 				node.castShadow = true;   // ✅ 模型产生阴影
 				node.receiveShadow = true; // ✅ 模型接收阴影（比如内部部分）
 			}
-			node.userData.isModel = true;
+			// node.userData.isModel = true;
 			assignExtrasToUserData( node, nodeDef );
 
 			if ( nodeDef.extensions ) addUnknownExtensionsToUserData( extensions, node, nodeDef );
