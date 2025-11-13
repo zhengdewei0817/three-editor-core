@@ -188,6 +188,7 @@ Editor.prototype = {
 				const skybox = new GroundedSkybox(texture, height, radius);
 				skybox.position.y = height;
 				skybox.name = 'Sky';
+				this.sky = skybox;
 				this.scene.add(skybox);
 				this.scene.environment = texture;
 				this.signals.sceneGraphChanged.dispatch(this.scene);
@@ -202,6 +203,7 @@ Editor.prototype = {
 	removeSkyFromScene: function () {
 		this.scene.remove(this.scene.getObjectByProperty('name', 'Sky'));
 		this.scene.environment = null;
+		this.signals.sceneGraphChanged.dispatch(this.scene);
 	},
 	addThreePrototype: function () {
 		const markFactory = this.options.markFactory || function () {};
@@ -557,45 +559,35 @@ Editor.prototype = {
 		var material = new THREE.MeshBasicMaterial({ color: 0xff0000, visible: false });
 
 		return function (object, helper) {
-
+			if (this.options.isPlayer) return;
 			if (helper === undefined) {
 
 				if (object.isCamera) {
-
+					
 					helper = new THREE.CameraHelper(object);
 
 				} else if (object.isPointLight) {
 
-					// 在播放器模式下不显示灯光边框
-					if (this.options.isPlayer) return;
 					helper = new THREE.PointLightHelper(object, 1);
 
 				} else if (object.isDirectionalLight) {
 
-					// 在播放器模式下不显示灯光边框
-					if (this.options.isPlayer) return;
 					helper = new THREE.DirectionalLightHelper(object, 1);
 
 				} else if (object.isSpotLight) {
 
-					// 在播放器模式下不显示灯光边框
-					if (this.options.isPlayer) return;
 					helper = new THREE.SpotLightHelper(object);
 
 				} else if (object.isHemisphereLight) {
 
-					// 在播放器模式下不显示灯光边框
-					if (this.options.isPlayer) return;
 					helper = new THREE.HemisphereLightHelper(object, 1);
 
 				} else if (object.isSkinnedMesh) {
-
 					helper = new THREE.SkeletonHelper(object.skeleton.bones[0]);
 
 				} else if (object.isBone === true && object.parent && object.parent.isBone !== true) {
-
+					
 					helper = new THREE.SkeletonHelper(object);
-
 				} else {
 
 					// no helper for this object type

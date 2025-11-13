@@ -60,12 +60,11 @@ function Viewport( editor ) {
 	grid2.material.vertexColors = false;
 	grid.add( grid2 );
 
-
+	const viewHelper = new ViewHelper( camera, container );
 	if (editor.options.isPlayer) {
 		grid.visible = false;
+		viewHelper.visible = false;
 	}
-
-	const viewHelper = new ViewHelper( camera, container );
 
 	//
 
@@ -283,27 +282,46 @@ function Viewport( editor ) {
 	// otherwise controls.enabled doesn't work.
 
 	const controls = new EditorControls( camera );
+	if ( editor.options.isPlayer ) {
+		// const maxDistance = (Math.min(editor.skyOptions?.radius,editor.skyOptions?.height) || 100)-30;
+		// console.log('maxDistance------', maxDistance);
+		controls.bounds.minY = 2;              // 相机最低高度
+		// controls.bounds.maxDistance = maxDistance;     // 最大活动半径
+		// controls.bounds.minDistance = 5;  
+		// const a = maxDistance / Math.sqrt(3); // ≈ 51.96
+		// const boxLimit = new THREE.Box3(
+		// 	new THREE.Vector3(-a, 0, -a),
+		// 	new THREE.Vector3(a, a, a)
+		// );     // 最小距离
+		// controls.bounds.boxLimit = boxLimit
+	}
+	
 	controls.addEventListener( 'change', function () {
 		console.log('change');
 		signals.cameraChanged.dispatch( camera );
 		signals.refreshSidebarObject3D.dispatch( camera );
 
 		// 如果是 Player 模式，限制相机不能进入地平面以下
-		if ( editor.options.isPlayer ) {
-			const minY = 1; // 最小高度，可以根据需要调整
-			camera.position.y = Math.max(camera.position.y, minY);
-			const minDistance = 5;
-			// 限制摄像头到中心点的最远距离
-			const maxDistance = editor.skyOptions?.radius || 100;
-			const distance = camera.position.distanceTo(controls.center);
-			if (distance > maxDistance) {
-				const direction = camera.position.clone().sub(controls.center).normalize();
-				camera.position.copy(controls.center).add(direction.multiplyScalar(maxDistance));
-			}  else if (distance < minDistance) {
-				const direction = camera.position.clone().sub(controls.center).normalize();
-				camera.position.copy(controls.center).add(direction.multiplyScalar(minDistance));
-			}
-		}
+		// if ( editor.options.isPlayer ) {
+		// 	const minY = 1; // 最小高度，可以根据需要调整
+		// 	camera.position.y = Math.max(camera.position.y, minY);
+		// 	const sceneCenterSky = editor.sky?.clone();
+		// 	const minDistance = 5;
+		// 	// 限制摄像头到中心点的最远距离
+		// 	const maxDistance = (Math.min(editor.skyOptions?.radius,editor.skyOptions?.height) || 100)-10;
+		// 	const sceneCenter = new THREE.Vector3(0, 0, 0);
+		// 	const distance = camera.position.distanceTo(sceneCenter);
+		// 	console.log('distance', distance);
+		// 	console.log('maxDistance', maxDistance);
+			
+		// 	if (distance > maxDistance) {
+		// 		const direction = camera.position.clone().sub(controls.center).normalize();
+		// 		camera.position.copy(controls.center).add(direction.multiplyScalar(maxDistance));
+		// 	}  else if (distance < minDistance) {
+		// 		const direction = camera.position.clone().sub(controls.center).normalize();
+		// 		camera.position.copy(controls.center).add(direction.multiplyScalar(minDistance));
+		// 	}
+		// }
 
 	} );
 	viewHelper.center = controls.center;

@@ -14,6 +14,13 @@ class EditorControls extends THREE.EventDispatcher {
 		this.zoomSpeed = 0.1;
 		this.rotationSpeed = 0.005;
 
+		this.bounds = {
+			minY: 1,
+			minDistance: 3,
+			maxDistance: 80,
+			boxLimit: null // 可选 new THREE.Box3(new THREE.Vector3(-100, 0, -100), new THREE.Vector3(100, 200, 100))
+		};
+
 		// internals
 
 		var scope = this;
@@ -77,7 +84,7 @@ class EditorControls extends THREE.EventDispatcher {
 
 			object.position.add( delta );
 			center.add( delta );
-
+			scope.applyBounds(); 
 			scope.dispatchEvent( changeEvent );
 
 		};
@@ -93,7 +100,7 @@ class EditorControls extends THREE.EventDispatcher {
 			delta.applyMatrix3( normalMatrix.getNormalMatrix( object.matrix ) );
 
 			object.position.add( delta );
-
+			scope.applyBounds(); 
 			scope.dispatchEvent( changeEvent );
 
 		};
@@ -113,11 +120,44 @@ class EditorControls extends THREE.EventDispatcher {
 			object.position.copy( center ).add( vector );
 
 			object.lookAt( center );
-
+			scope.applyBounds(); 
 			scope.dispatchEvent( changeEvent );
 
 		};
-
+		this.applyBounds = function () {
+			const pos = object.position;
+			const { minY, minDistance, maxDistance, boxLimit } = scope.bounds;
+		
+			// 🔹 新增：固定边界中心点
+			// const boundCenter = scope.bounds.center || new THREE.Vector3(0, 0, 0);
+		
+			// 限制高度
+			pos.y = Math.max(pos.y, minY);
+		
+			// // 🔹 与 (0,0,0) 的距离
+			// const distance = pos.distanceTo(boundCenter);
+			// console.log('distance', distance);
+			// console.log('maxDistance', maxDistance);
+			// console.log('minDistance', minDistance);
+			// console.log('boundCenter', boundCenter);
+			// console.log('pos', pos);
+			// // 限制最大/最小半径
+			// if (distance > maxDistance) {
+			// 	const dir = pos.clone().sub(boundCenter).normalize();
+			// 	object.position.copy(boundCenter).add(dir.multiplyScalar(maxDistance));
+			// }
+		
+			// if (distance < minDistance) {
+			// 	const dir = pos.clone().sub(boundCenter).normalize();
+			// 	object.position.copy(boundCenter).add(dir.multiplyScalar(minDistance));
+			// }
+		
+			// // 限制盒子范围（可选）
+			// if (boxLimit) {
+			// 	pos.clamp(boxLimit.min, boxLimit.max);
+			// }
+		};
+		
 		//
 
 		function onPointerDown( event ) {
