@@ -114,6 +114,10 @@ function Editor(options) {
 
 		updataSchema: new Signal(),
 
+		// loading
+
+		loadingProgressChanged: new Signal(),
+
 	};
 	this.data = {};
 	this.oloData = {};
@@ -191,6 +195,9 @@ Editor.prototype = {
 				this.sky = skybox;
 				this.scene.add(skybox);
 				this.scene.environment = texture;
+				this.scene.background = texture;  
+				// this.scene.environmentIntensity = 0.1;
+  // 背景天空
 				this.signals.sceneGraphChanged.dispatch(this.scene);
 
 			},
@@ -955,14 +962,44 @@ Editor.prototype = {
 	 * }
 	 * @param {*} data 
 	 */
-	setData: function (data, options = {}, callback) {
+	setData: async function (data, options = {}, callback) {
 		const { mergeUpdate = false } = options;
 		this.data = data;
+		
+		// 收集所有需要加载的 Model
+		const modelLoadPromises = [];
+		this._modelLoadPromises = modelLoadPromises;
+		
+		// 执行 diff 和添加操作
 		this.diffData(this.data, this.oloData, true);
+		
 		this.oloData = JSON.parse(JSON.stringify(data));
+		
+		// 等待所有 Model 加载完成
+		if (modelLoadPromises.length > 0) {
+			try {
+				await Promise.all(modelLoadPromises);
+			} catch (error) {
+				console.error('加载 Model 时出错:', error);
+			}
+		} else {
+			// 如果没有需要加载的 Model，直接通知加载完成
+			this.signals.loadingProgressChanged.dispatch({
+				total: 0,
+				current: 0,
+				percent: 100,
+				status: 'complete',
+				fileName: '',
+				fileProgresses: []
+			});
+		}
+		
+		// 清理临时数组
+		this._modelLoadPromises = null;
+		
 		if (callback){
 			callback();
-		};
+		}
 	},
 	diffData: function (data, oldData, isRoot, rootName, rootData) {
 		const res = diff(oldData, data, { full: true });
@@ -1050,7 +1087,12 @@ Editor.prototype = {
 				createDirectionalLight(name, value, this);
 				break;
 			case "Model":
-				createModel(name, value, this);
+				// createModel 是异步的，需要收集 Promise
+				const modelPromise = createModel(name, value, this);
+				// 如果正在收集 Model 加载 Promise，则添加到数组
+				if (this._modelLoadPromises) {
+					this._modelLoadPromises.push(modelPromise);
+				}
 				break;
 			case "Camera":
 				createCamera(name, value, this);

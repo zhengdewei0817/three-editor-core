@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Editor 加载进度示例</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      color: #333;
+      margin-top: 0;
+    }
+
+    button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      font-size: 16px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-right: 10px;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: #45a049;
+    }
+
+    button:disabled {
+      background: #cccccc;
+      cursor: not-allowed;
+    }
+
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+
+    .loading-overlay.active {
+      display: flex;
+    }
+
+    .loading-content {
+      background: white;
+      padding: 40px;
+      border-radius: 10px;
+      min-width: 500px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .progress-section {
+      margin-bottom: 25px;
+    }
+
+    .progress-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .progress-label {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .progress-label .percentage {
+      font-weight: bold;
+      color: #4CAF50;
+      font-size: 16px;
+    }
+
+    .progress-bar-container {
+      width: 100%;
+      height: 30px;
+      background: #e0e0e0;
+      border-radius: 15px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #4CAF50, #8BC34A);
+      transition: width 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 12px;
+    }
+
+    .file-progress-bar {
+      background: linear-gradient(90deg, #2196F3, #03A9F4);
+    }
+
+    .file-info {
+      font-size: 14px;
+      color: #333;
+      margin-top: 5px;
+    }
+
+    .log-section {
+      margin-top: 30px;
+      padding: 20px;
+      background: #f9f9f9;
+      border-radius: 5px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .log-section h3 {
+      margin-top: 0;
+      color: #333;
+    }
+
+    .log-entry {
+      padding: 8px;
+      margin-bottom: 5px;
+      background: white;
+      border-left: 3px solid #4CAF50;
+      border-radius: 3px;
+      font-size: 13px;
+      font-family: 'Courier New', monospace;
+    }
+
+    .log-entry.loading {
+      border-left-color: #2196F3;
+    }
+
+    .log-entry.loaded {
+      border-left-color: #4CAF50;
+    }
+
+    .log-entry.complete {
+      border-left-color: #FF9800;
+      font-weight: bold;
+    }
+
+    .controls {
+      margin-bottom: 20px;
+    }
+
+    .info-box {
+      background: #e3f2fd;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+      border-left: 4px solid #2196F3;
+    }
+
+    .info-box h3 {
+      margin-top: 0;
+      color: #1976D2;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📦 Three Editor 加载进度示例</h1>
+    
+    <div class="info-box">
+      <h3>功能说明</h3>
+      <p>本示例展示了如何使用 Editor 的加载进度回调功能。点击下方按钮开始加载模型文件。</p>
+      <ul>
+        <li><strong>总进度</strong>: 基于所有文件加载进度的平均值</li>
+        <li><strong>当前文件进度</strong>: 显示正在加载的文件的下载进度</li>
+        <li><strong>实时日志</strong>: 记录每个加载阶段的详细信息</li>
+      </ul>
+    </div>
+
+    <div class="controls">
+      <button id="loadBtn" onclick="startLoading()">开始加载模型</button>
+      <button onclick="clearLogs()">清空日志</button>
+    </div>
+
+    <div class="log-section">
+      <h3>📋 加载日志</h3>
+      <div id="logContainer">
+        <div class="log-entry">等待开始加载...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 加载进度遮罩层 -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-content">
+      <div class="progress-section">
+        <div class="progress-label">
+          <span>总进度</span>
+          <span class="percentage" id="totalPercent">0%</span>
+        </div>
+        <div class="progress-bar-container">
+          <div class="progress-bar" id="totalProgress" style="width: 0%"></div>
+        </div>
+        <div class="file-info" id="totalInfo">准备加载...</div>
+      </div>
+
+      <div class="progress-section">
+        <div class="progress-label">
+          <span>当前文件</span>
+          <span class="percentage" id="filePercent">0%</span>
+        </div>
+        <div class="progress-bar-container">
+          <div class="progress-bar file-progress-bar" id="fileProgress" style="width: 0%"></div>
+        </div>
+        <div class="file-info" id="fileInfo">等待加载...</div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    // 这里是示例代码，实际使用时需要正确导入 Editor
+    // import { Editor } from './src/Editor.js';
+
+    // 模拟 Editor 和 Signal (实际使用时请使用真实的 Editor)
+    class Signal {
+      constructor() {
+        this.listeners = [];
+      }
+      add(callback) {
+        this.listeners.push(callback);
+      }
+      dispatch(data) {
+        this.listeners.forEach(callback => callback(data));
+      }
+    }
+
+    // 创建一个模拟的 editor 对象用于演示
+    const editor = {
+      signals: {
+        loadingProgressChanged: new Signal()
+      },
+      loader: {
+        loadByUrls: async function(urls, options) {
+          // 模拟加载过程
+          const total = urls.length;
+          const fileProgresses = new Array(total).fill(0);
+          
+          const calculateTotalProgress = () => {
+            const sum = fileProgresses.reduce((acc, val) => acc + val, 0);
+            return Math.floor(sum / total);
+          };
+
+          // 开始加载
+          editor.signals.loadingProgressChanged.dispatch({
+            total,
+            current: 0,
+            percent: 0,
+            status: 'start',
+            fileName: '',
+            fileProgresses: [...fileProgresses]
+          });
+
+          for (let i = 0; i < urls.length; i++) {
+            const url = urls[i];
+            
+            // 模拟文件加载过程
+            for (let progress = 0; progress <= 100; progress += 10) {
+              await new Promise(resolve => setTimeout(resolve, 200));
+              
+              fileProgresses[i] = progress;
+              
+              editor.signals.loadingProgressChanged.dispatch({
+                total,
+                current: i,
+                percent: calculateTotalProgress(),
+                status: progress < 100 ? 'loading' : 'loaded',
+                fileName: url.fileName,
+                filePercent: progress,
+                fileProgresses: [...fileProgresses]
+              });
+            }
+          }
+
+          // 完成
+          editor.signals.loadingProgressChanged.dispatch({
+            total,
+            current: total,
+            percent: 100,
+            status: 'complete',
+            fileName: '',
+            fileProgresses: [...fileProgresses]
+          });
+        }
+      }
+    };
+
+    // 设置加载进度监听
+    editor.signals.loadingProgressChanged.add((progressInfo) => {
+      const { total, current, percent, status, fileName, filePercent, fileProgresses } = progressInfo;
+      
+      // 更新UI
+      const loadingOverlay = document.getElementById('loadingOverlay');
+      const totalProgress = document.getElementById('totalProgress');
+      const fileProgress = document.getElementById('fileProgress');
+      const totalPercent = document.getElementById('totalPercent');
+      const filePercentEl = document.getElementById('filePercent');
+      const totalInfo = document.getElementById('totalInfo');
+      const fileInfo = document.getElementById('fileInfo');
+      
+      // 更新总进度
+      totalProgress.style.width = `${percent}%`;
+      totalPercent.textContent = `${percent}%`;
+      
+      if (status === 'start') {
+        loadingOverlay.classList.add('active');
+        totalInfo.textContent = `准备加载 ${total} 个文件...`;
+        fileInfo.textContent = '等待加载...';
+        addLog('开始加载', 'loading');
+      } 
+      else if (status === 'loading') {
+        loadingOverlay.classList.add('active');
+        fileProgress.style.width = `${filePercent}%`;
+        filePercentEl.textContent = `${filePercent}%`;
+        totalInfo.textContent = `正在加载第 ${current + 1}/${total} 个文件 - 总进度: ${percent}%`;
+        fileInfo.textContent = `${fileName}`;
+        
+        if (filePercent === 0 || filePercent === 10) { // 减少日志频率
+          addLog(`正在加载: ${fileName} (${filePercent}%)`, 'loading');
+        }
+      }
+      else if (status === 'loaded') {
+        fileProgress.style.width = '100%';
+        filePercentEl.textContent = '100%';
+        totalInfo.textContent = `已完成 ${current}/${total} 个文件 - 总进度: ${percent}%`;
+        addLog(`✓ 已加载: ${fileName}`, 'loaded');
+      }
+      else if (status === 'complete') {
+        totalInfo.textContent = `所有文件加载完成! (${total}/${total})`;
+        fileInfo.textContent = '加载完成';
+        addLog(`🎉 加载完成! 共加载 ${total} 个文件`, 'complete');
+        
+        // 1秒后隐藏加载界面
+        setTimeout(() => {
+          loadingOverlay.classList.remove('active');
+          document.getElementById('loadBtn').disabled = false;
+        }, 1500);
+      }
+    });
+
+    // 日志相关函数
+    function addLog(message, type = '') {
+      const logContainer = document.getElementById('logContainer');
+      const time = new Date().toLocaleTimeString();
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      entry.textContent = `[${time}] ${message}`;
+      logContainer.appendChild(entry);
+      logContainer.scrollTop = logContainer.scrollHeight;
+    }
+
+    function clearLogs() {
+      const logContainer = document.getElementById('logContainer');
+      logContainer.innerHTML = '<div class="log-entry">日志已清空</div>';
+    }
+
+    // 开始加载函数
+    window.startLoading = function() {
+      document.getElementById('loadBtn').disabled = true;
+      
+      // 模拟文件列表
+      const urls = [
+        { fileUrl: 'https://example.com/model1.glb', fileName: 'building.glb' },
+        { fileUrl: 'https://example.com/model2.glb', fileName: 'car.glb' },
+        { fileUrl: 'https://example.com/model3.glb', fileName: 'tree.glb' },
+        { fileUrl: 'https://example.com/model4.glb', fileName: 'character.glb' }
+      ];
+
+      addLog(`准备加载 ${urls.length} 个模型文件...`, 'loading');
+      
+      // 开始加载
+      editor.loader.loadByUrls(urls, { getModel: false });
+    };
+
+    window.clearLogs = clearLogs;
+  </script>
+</body>
+</html>
+

@@ -861,17 +861,130 @@ function Loader( editor ) {
 
 	this.loadByUrls = async function (urls, options, onProgress, onError, extraOptions) {
 		extraOptions = extraOptions || {};
+		options = options || {};
+		
+		// 如果没有文件需要加载，直接完成
+		if (!urls || urls.length === 0) {
+			editor.signals.loadingProgressChanged.dispatch({
+				total: 0,
+				current: 0,
+				percent: 100,
+				status: 'complete',
+				fileName: '',
+				fileProgresses: []
+			});
+			return [];
+		}
+		
 		const manager = new THREE.LoadingManager();
 		manager.setURLModifier( function ( url ) {
 			return url;
 		} );
 		const res = []
-		for (const url of urls) {
-			const result = await this.loadByUrl(url.fileUrl, url.fileName, manager, options, onProgress, onError, extraOptions);
-			if (options.getModel) {
-				res.push(result);
+		const total = urls.length;
+		
+		// 为每个文件维护一个进度值 (0-100)
+		const fileProgresses = new Array(total).fill(0);
+		
+		// 计算总进度的函数
+		const calculateTotalProgress = () => {
+			const sum = fileProgresses.reduce((acc, val) => acc + val, 0);
+			return Math.floor(sum / total);
+		};
+		
+		// 通知开始加载
+		editor.signals.loadingProgressChanged.dispatch({
+			total: total,
+			current: 0,
+			percent: 0,
+			status: 'start',
+			fileName: '',
+			fileProgresses: [...fileProgresses]
+		});
+		
+		for (let i = 0; i < urls.length; i++) {
+			const url = urls[i];
+			try {
+				// 通知当前正在加载的文件
+				editor.signals.loadingProgressChanged.dispatch({
+					total: total,
+					current: i,
+					percent: calculateTotalProgress(),
+					status: 'loading',
+					fileName: url.fileName,
+					fileProgresses: [...fileProgresses]
+				});
+				
+				// 单个文件的进度回调
+				const fileProgressCallback = (fileProgressEvent) => {
+					// 更新这个文件的进度
+					if (fileProgressEvent.percent !== undefined) {
+						fileProgresses[i] = fileProgressEvent.percent;
+					}
+					
+					// 实时更新总进度
+					editor.signals.loadingProgressChanged.dispatch({
+						total: total,
+						current: i,
+						percent: calculateTotalProgress(),
+						status: 'loading',
+						fileName: url.fileName,
+						filePercent: fileProgressEvent.percent || 0,
+						fileProgresses: [...fileProgresses]
+					});
+					
+					// 调用外部的进度回调
+					if (onProgress) {
+						onProgress(fileProgressEvent);
+					}
+				};
+				
+				const result = await this.loadByUrl(
+					url.fileUrl, 
+					url.fileName, 
+					manager, 
+					options, 
+					fileProgressCallback, 
+					onError, 
+					extraOptions
+				);
+				
+				if (options.getModel) {
+					res.push(result);
+				}
+				
+				// 确保该文件进度标记为100%
+				fileProgresses[i] = 100;
+				
+				// 通知单个文件加载完成
+				editor.signals.loadingProgressChanged.dispatch({
+					total: total,
+					current: i + 1,
+					percent: calculateTotalProgress(),
+					status: 'loaded',
+					fileName: url.fileName,
+					fileProgresses: [...fileProgresses]
+				});
+			} catch (error) {
+				console.error(`加载文件失败: ${url.fileName}`, error);
+				if (onError) {
+					onError(error);
+				}
+				// 即使失败也标记为100%，继续下一个
+				fileProgresses[i] = 100;
 			}
 		}
+		
+		// 通知所有文件加载完成
+		editor.signals.loadingProgressChanged.dispatch({
+			total: total,
+			current: total,
+			percent: 100,
+			status: 'complete',
+			fileName: '',
+			fileProgresses: [...fileProgresses]
+		});
+		
 		return res;
 	}
 
@@ -880,36 +993,88 @@ function Loader( editor ) {
 		const fileInfo = fileName.split('.')
 		const extension = fileInfo.pop().toLowerCase();
 		const filename = fileInfo[0];
+		
+		options = options || {};
+		
 		switch (extension) {
 		case 'glb':
 			{
-				const loader = await createGLTFLoader();
-				return new Promise((resolve, reject) => {
-					loader.load(fileUrl, function (result) {
-						const scene = result.scene;
-						scene.name = filename;
-						scene.animations.push( ...result.animations );
-						
-						// 为场景中的所有对象设置基于名字的UUID
-						assignUUIDsToScene( scene );
-						
-						markAsModel( scene );
-
-						if (!options.getModel) {
-							editor.execute( new AddObjectCommand( editor, scene ) );
+				// 创建一个专门的 LoadingManager 来追踪这个文件的进度
+				const fileManager = new THREE.LoadingManager();
+				
+				// 追踪加载进度
+				fileManager.onProgress = function (url, itemsLoaded, itemsTotal) {
+					if (itemsTotal > 0) {
+						const filePercent = Math.floor((itemsLoaded / itemsTotal) * 100);
+						if (onProgress) {
+							onProgress({
+								loaded: itemsLoaded,
+								total: itemsTotal,
+								percent: filePercent,
+								fileName: fileName
+							});
 						}
-						loader.dracoLoader.dispose();
-						loader.ktx2Loader.dispose();
-						resolve(scene);
-					}, (e) => {
-						onProgress && onProgress(e)
-					}, (err) => {
-						reject(err);
-					}, extraOptions);
+					}
+				};
+				
+				const loader = await createGLTFLoader(fileManager);
+				return new Promise((resolve, reject) => {
+					loader.load(
+						fileUrl, 
+						function (result) {
+							// 成功回调
+							const scene = result.scene;
+							scene.name = filename;
+							scene.animations.push( ...result.animations );
+							
+							// 为场景中的所有对象设置基于名字的UUID
+							assignUUIDsToScene( scene );
+							
+							markAsModel( scene );
+
+							if (!options.getModel) {
+								editor.execute( new AddObjectCommand( editor, scene ) );
+							}
+							loader.dracoLoader.dispose();
+							loader.ktx2Loader.dispose();
+							resolve(scene);
+						}, 
+						(progressEvent) => {
+							// XMLHttpRequest 进度回调
+							if (onProgress) {
+								if (progressEvent.lengthComputable && progressEvent.total > 0) {
+									const filePercent = Math.floor((progressEvent.loaded / progressEvent.total) * 100);
+									onProgress({
+										loaded: progressEvent.loaded,
+										total: progressEvent.total,
+										percent: filePercent,
+										fileName: fileName
+									});
+								} else if (progressEvent.loaded) {
+									// 即使不知道总大小，也报告已加载的字节数
+									onProgress({
+										loaded: progressEvent.loaded,
+										total: 0,
+										percent: 50, // 未知总大小时显示 50%
+										fileName: fileName
+									});
+								}
+							}
+						}, 
+						(err) => {
+							// 错误回调
+							if (onError) {
+								onError(err);
+							}
+							reject(err);
+						}, 
+						extraOptions
+					);
 				})
 			}
 			default:
-				break;
+				console.error( 'Unsupported file format (' + extension + ').' );
+				return Promise.reject(new Error('Unsupported file format: ' + extension));
 		}
 	}
 
