@@ -32,6 +32,18 @@ export function createDirectionalLight(name: string, options: DirectionalLightCo
   directionalLight.name = name;
   directionalLight.uuid = name;
   directionalLight.castShadow = true; // 必须开启！
+  const d = 100;
+  directionalLight.shadow.camera.left = -d;
+  directionalLight.shadow.camera.right = d;
+  directionalLight.shadow.camera.top = d;
+  directionalLight.shadow.camera.bottom = -d;
+
+  // ✅ 调整阴影深度范围
+  directionalLight.shadow.camera.near = 1;
+  directionalLight.shadow.camera.far = 400;
+
+  // ✅ 可选：调节柔和度（通过阴影模糊）
+  directionalLight.shadow.radius = 4;
   Object.keys(options.config.props).forEach(key => {
     options.config.props[key];
     setProps(directionalLight, key, options.config.props[key], editor);

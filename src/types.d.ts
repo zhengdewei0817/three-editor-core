@@ -195,10 +195,7 @@ export class Editor {
 
   // 纹理管理
   addTexture(texture: THREE.Texture): void;
-  addSkyToScene(
-    hdrPath: string,
-    options?: { height?: number; radius?: number }
-  ): void;
+  addSkyToScene(): void;
   removeSkyFromScene(): void;
   // 相机管理
   addCamera(camera: THREE.Camera): void;
@@ -221,6 +218,7 @@ export class Editor {
   select(object: THREE.Object3D | null): void;
   selectById(id: number): void;
   selectByUuid(uuid: string): void;
+  objectFocused(uuid: string): void;
   deselect(): void;
   focus(object: THREE.Object3D | undefined): void;
   focusById(id: number): void;

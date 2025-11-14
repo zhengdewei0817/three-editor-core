@@ -14,7 +14,7 @@ import { SidebarSettingsShortcuts } from './Shortcuts';
 import { createPointLight, setProps as setPointLightProps, updataUI as updataPointLightUI } from './components/PointLight.js';
 import { createAmbientLight, setProps as setAmbientLightProps, updataUI as updataAmbientLightUI } from './components/AmbientLight.js';
 import { createDirectionalLight, setProps as setDirectionalLightProps, updataUI as updataDirectionalLightUI } from './components/DirectionalLight.js';
-import { createModel, updataUI as updataModelUI } from './components/Model.js';
+import { createModel, updataUI as updataModelUI, setProps as setModelProps } from './components/Model.js';
 import { createCamera, setProps as setCameraProps, updataUI as updataCameraUI } from './components/Camera.js';
 import methodsApi from './methodsApi/index';
 import { CSS3DRenderer, CSS3DSprite } from './jsm/renderers/CSS3DRenderer.js';
@@ -173,43 +173,72 @@ function Editor(options) {
 
 Editor.prototype = {
 	addSkyToScene: function (hdrPath, options = {}) {
-		if (!hdrPath) {
-			console.warn('请提供 HDR 文件路径');
-			return;
-		}
-		
-		const height = options.height || 50;
-		const radius = options.radius || 100;
-		this.skyOptions = {
-			height,
-			radius,
+
+		const effectController = {
+			turbidity: 12.6,
+			rayleigh: 4,
+			mieCoefficient: 0.007,
+			mieDirectionalG: 0.558,
+			elevation: 88.9,
+			azimuth: -180,
+			exposure: 0.2379
 		};
-		const loader = new HDRLoader();
-		loader.load(
-			hdrPath,  // 由使用者提供可访问的路径
-			(texture) => {
-				texture.mapping = EquirectangularReflectionMapping;
-				const skybox = new GroundedSkybox(texture, height, radius);
-				skybox.position.y = height;
-				skybox.name = 'Sky';
-				this.sky = skybox;
-				this.scene.add(skybox);
-				this.scene.environment = texture;
-				this.scene.background = texture;  
-				// this.scene.environmentIntensity = 0.1;
-  // 背景天空
+		const sun = new THREE.Vector3();
+
+		const sky = new Sky();
+		const uniforms = sky.material.uniforms;
+		uniforms[ 'turbidity' ].value = effectController.turbidity;
+		uniforms[ 'rayleigh' ].value = effectController.rayleigh;
+		uniforms[ 'mieCoefficient' ].value = effectController.mieCoefficient;
+		uniforms[ 'mieDirectionalG' ].value = effectController.mieDirectionalG;
+
+		const phi = THREE.MathUtils.degToRad( 90 - effectController.elevation );
+		const theta = THREE.MathUtils.degToRad( effectController.azimuth );
+
+		sun.setFromSphericalCoords( 1, phi, theta );
+
+		uniforms[ 'sunPosition' ].value.copy( sun );
+		sky.name = 'Sky';
+		sky.scale.setScalar( 450000 );
+		this.scene.add( sky );
+		this.renderer.toneMappingExposure = effectController.exposure;
+// 		if (!hdrPath) {
+// 			console.warn('请提供 HDR 文件路径');
+// 			return;
+// 		}
+		
+// 		const height = options.height || 50;
+// 		const radius = options.radius || 100;
+// 		this.skyOptions = {
+// 			height,
+// 			radius,
+// 		};
+// 		const loader = new HDRLoader();
+// 		loader.load(
+// 			hdrPath,  // 由使用者提供可访问的路径
+// 			(texture) => {
+// 				texture.mapping = EquirectangularReflectionMapping;
+// 				const skybox = new GroundedSkybox(texture, height, radius);
+// 				skybox.position.y = height;
+// 				skybox.name = 'Sky';
+// 				this.sky = skybox;
+// 				this.scene.add(skybox);
+// 				this.scene.environment = texture;
+// 				this.scene.background = texture;  
+// 				// this.scene.environmentIntensity = 0.1;
+//   // 背景天空
 				this.signals.sceneGraphChanged.dispatch(this.scene);
 
-			},
-			undefined,
-			(error) => {
-				console.error('加载 HDR 失败:', error);
-			}
-		);
+// 			},
+// 			undefined,
+// 			(error) => {
+// 				console.error('加载 HDR 失败:', error);
+// 			}
+// 		);
 	},
 	removeSkyFromScene: function () {
 		this.scene.remove(this.scene.getObjectByProperty('name', 'Sky'));
-		this.scene.environment = null;
+		// this.scene.environment = null;
 		this.signals.sceneGraphChanged.dispatch(this.scene);
 	},
 	addThreePrototype: function () {
@@ -729,6 +758,21 @@ Editor.prototype = {
 
 	},
 
+	objectFocused: function (uuid) {
+		var scope = this;
+
+		this.scene.traverse(function (child) {
+
+			if (child.uuid === uuid) {
+
+				scope.signals.objectFocused.dispatch(child);
+
+			}
+
+		});
+		
+	},
+
 	deselect: function () {
 
 		this.selector.deselect();
@@ -930,6 +974,8 @@ Editor.prototype = {
  		renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 		renderer.domElement.setAttribute('tabindex', '0');
 		renderer.domElement.style.outline = 'none';
+		renderer.toneMapping = THREE.ACESFilmicToneMapping;
+		renderer.toneMappingExposure = 0.5;
 		let cssRenderer = null;
 		if (this.options.useCSS3D) {
 			// 创建独立的 CSS3DRenderer
@@ -1063,6 +1109,9 @@ Editor.prototype = {
 				break;
 			case "Camera":
 				setCameraProps(object, key, newVal, this);
+				break;
+			case "Model":
+				setModelProps(object, key, newVal, this);
 				break;
 			default:
 				break;
