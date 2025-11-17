@@ -968,7 +968,10 @@ Editor.prototype = {
 		const width = options.width || window.innerWidth;
 		const height = options.height || window.innerHeight;
 		console.log(width, height, options);
-		const renderer = new THREE.WebGLRenderer({ antialias: true });
+		const renderer = new THREE.WebGLRenderer({ 
+			antialias: true,
+			logarithmicDepthBuffer: true
+		 });
 		renderer.setSize(width, height);
 		renderer.shadowMap.enabled = true;
  		renderer.shadowMap.type = THREE.PCFSoftShadowMap;
